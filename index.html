@@ -1,0 +1,2064 @@
+<title>Ideation Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument panel. Flat warm-grey panels, hairline rules, tiny mono labels, big grotesk readouts, one signal orange. */
+:root {
+  --bg: #d1d0cd;
+  --card: #e8e5de;
+  --fg: #1a1a1a;
+  --muted: #6c6a65;
+  --line: rgba(26, 26, 26, .16);
+  --tick: rgba(26, 26, 26, .22);
+  --accent: #ee4b23;
+  --accent-soft: #d9d6ce;
+  --on-accent: #ffffff;
+  --warn-soft: rgba(238, 75, 35, .12);
+  --warn: #b5341a;
+  --paper: #161616;
+  --ink: #f2f0ea;
+  --card-edge: rgba(255, 255, 255, .06);
+  --table: #d9d6ce;
+  --shadow: rgba(20, 20, 20, .16);
+  --serif: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --sans: "Geist", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "Geist Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111111; --card: #1e1e1e; --fg: #f2f0ea; --muted: #8e8c86; --line: rgba(255, 255, 255, .13); --tick: rgba(255, 255, 255, .2);
+    --accent: #f2542d; --accent-soft: #2c2c2b; --on-accent: #ffffff; --warn-soft: rgba(242, 84, 45, .14); --warn: #ff8a6a;
+    --paper: #0b0b0b; --table: #2b2b2a; --shadow: rgba(0, 0, 0, .5); --card-edge: rgba(255, 255, 255, .14); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111111; --card: #1e1e1e; --fg: #f2f0ea; --muted: #8e8c86; --line: rgba(255, 255, 255, .13); --tick: rgba(255, 255, 255, .2);
+  --accent: #f2542d; --accent-soft: #2c2c2b; --on-accent: #ffffff; --warn-soft: rgba(242, 84, 45, .14); --warn: #ff8a6a;
+  --paper: #0b0b0b; --table: #2b2b2a; --shadow: rgba(0, 0, 0, .5); --card-edge: rgba(255, 255, 255, .14); color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 680px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 56px; display: grid; gap: 14px; }
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+h1 { font-size: clamp(32px, 7vw, 44px); line-height: 1.05; padding-bottom: 6px; }
+h2 { font-size: 20px; }
+h3 { font-size: 17px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.hint { font-size: 13px; color: var(--muted); }
+.divider { border: 0; border-top: 1px solid var(--line); margin: 0; }
+.group { display: grid; gap: 10px; }
+
+/* Brief card */
+select, input[type="text"], textarea {
+  font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; width: 100%; box-sizing: border-box;
+}
+select { appearance: none; padding-right: 34px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%; background-size: 5px 5px; background-repeat: no-repeat; }
+textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.brief-text { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 1.4; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { all: unset; cursor: pointer; font-weight: 500; font-size: 14px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); color: var(--fg); }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.btn.quiet { border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.btn[disabled] { opacity: .5; cursor: default; }
+.btn:focus-visible, .stop:focus-visible, .tone:focus-visible, .other:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.status { font-size: 13px; color: var(--muted); margin: 0; }
+.status.err { color: var(--warn); }
+
+/* Stance track */
+.track { position: relative; display: grid; grid-template-columns: repeat(8, 1fr); }
+.track::before { content: ""; position: absolute; left: 6.25%; right: 6.25%; top: 17px; height: 2px; background: var(--line); }
+.stop { all: unset; position: relative; display: grid; justify-items: center; gap: 8px; cursor: pointer; padding: 8px 2px; border-radius: 8px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; background: var(--card); border: 2px solid var(--muted); transition: transform .15s ease; }
+.stop[aria-checked="true"] .dot { background: var(--accent); border-color: var(--accent); transform: scale(1.3); }
+.stop-name { font-size: 12px; line-height: 1.2; text-align: center; color: var(--muted); }
+.stop[aria-checked="true"] .stop-name { color: var(--fg); font-weight: 600; }
+@media (max-width: 560px) { .stop-name { display: none; } }
+
+/* Tone */
+.tones { display: flex; gap: 6px; min-width: 0; }
+.tone { all: unset; box-sizing: border-box; flex: 1 1 auto; min-width: 0; text-align: center; padding: 9px 8px; white-space: nowrap; border-radius: 9px; cursor: pointer; font-weight: 500; color: var(--muted); border: 1px solid var(--line); }
+.tone[aria-checked="true"] { background: var(--accent-soft); color: var(--fg); border-color: var(--accent); }
+
+/* Output */
+.output { display: grid; gap: 14px; }
+.pill { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--fg); }
+/* Strategy cards: plain off-white index cards, the same in both themes */
+.output > * { min-width: 0; }
+.table { display: block; width: 100%; box-sizing: border-box; background: var(--table); border-radius: 12px; padding: clamp(18px, 5vw, 36px) 16px; }
+.ocard {
+  all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; max-width: 420px; margin: 0 auto;
+  perspective: 1200px; transform: rotate(-.8deg); border-radius: 14px;
+}
+.ocard:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.ocard .inner { display: grid; transform-style: preserve-3d; transition: transform .55s cubic-bezier(.3,.7,.3,1); }
+.ocard.turned .inner { transform: rotateY(180deg); }
+.face {
+  grid-area: 1 / 1; aspect-ratio: 7 / 5; box-sizing: border-box; border-radius: 14px; border: 1px solid var(--card-edge);
+  box-shadow: 0 1px 2px var(--shadow), 0 8px 24px var(--shadow);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; line-height: 1.4;
+}
+.front { background: var(--paper); color: var(--ink); padding: 9% 10%; display: grid; place-items: center; text-align: center; font-size: clamp(15px, 3.6vw, 18px); text-wrap: balance; }
+.back { background: var(--ink); color: var(--paper); transform: rotateY(180deg); padding: 7% 8%; display: flex; flex-direction: column; justify-content: center; gap: 8px; text-align: left; font-size: clamp(13px, 3.3vw, 15px); }
+.back-title { display: block; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+.next-item { display: grid; grid-template-columns: 1.4em 1fr; }
+.next-item b { font-weight: 700; opacity: .5; }
+.flip-hint { display: block; text-align: center; margin-top: 12px; }
+.ocard.flip { animation: flip .38s ease; }
+@keyframes flip { 0% { transform: rotate(-.8deg) rotateY(0); } 50% { transform: rotate(-.8deg) rotateY(90deg); } 100% { transform: rotate(-.8deg) rotateY(0); } }
+.warn { margin: 0; font-size: 14px; padding: 10px 12px; border-radius: 9px; background: var(--warn-soft); color: var(--warn); }
+.desc { display: grid; gap: 4px; }
+.desc p { margin: 0; color: var(--muted); }
+.desc strong { color: var(--fg); font-weight: 600; }
+
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.facts .card { gap: 6px; padding: 16px; align-content: start; }
+.facts p { margin: 0; }
+@media (max-width: 560px) { .facts { grid-template-columns: 1fr; } }
+
+.others { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.other { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; gap: 6px; align-content: start; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.other:hover { border-color: var(--accent); }
+.other .q { order: 2; font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.35; }
+.other .t { order: 1; font-size: 13px; color: var(--muted); }
+@media (max-width: 560px) { .others { grid-template-columns: 1fr; } }
+
+.section-label { margin-top: 10px; }
+
+/* Mode toggle and flow */
+.top { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+.mode { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 11px; background: var(--card); border: 1px solid var(--line); }
+.mode button { all: unset; cursor: pointer; font-size: 13px; font-weight: 500; padding: 5px 8px; white-space: nowrap; border-radius: 8px; color: var(--muted); text-align: center; }
+.mode button[aria-pressed="true"] { background: var(--accent-soft); color: var(--fg); }
+.mode button:focus-visible, .steps button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; list-style: none; margin: 0; padding: 0; }
+.steps button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.steps button::before { content: ""; height: 4px; border-radius: 2px; background: var(--line); }
+.steps button[aria-current="step"] { color: var(--fg); font-weight: 600; }
+.steps button.done::before, .steps button[aria-current="step"]::before { background: var(--accent); }
+.nav { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 4px; }
+/* Views */
+.view { display: grid; gap: 14px; min-width: 0; }
+.view > * { min-width: 0; }
+
+/* Talk mode */
+.talk-brief { margin: 0; font-family: var(--serif); font-size: 17px; line-height: 1.4; overflow-wrap: anywhere; }
+.voices { display: flex; flex-wrap: wrap; gap: 6px; }
+.voice { all: unset; cursor: pointer; font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.voice:hover { border-color: var(--accent); }
+.voice[aria-checked="true"] { background: var(--accent-soft); color: var(--fg); border-color: var(--accent); font-weight: 500; }
+.voice:focus-visible, .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat { gap: 12px; }
+.log { display: flex; flex-direction: column; gap: 14px; max-height: 58vh; min-height: 160px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+.msg { max-width: 88%; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; margin: 0; }
+.msg.user { align-self: flex-end; background: var(--accent-soft); padding: 9px 13px; border-radius: 14px 14px 4px 14px; }
+.msg.ai { align-self: flex-start; }
+.msg .who { display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; white-space: normal; }
+.msg .thinking { color: var(--muted); font-style: italic; }
+.msg.card-msg { align-self: center; width: min(100%, 340px); max-width: 100%; }
+.mini-ocard {
+  aspect-ratio: 7 / 5; box-sizing: border-box; padding: 9%; display: grid; place-items: center; text-align: center;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--card-edge); border-radius: 12px;
+  box-shadow: 0 1px 2px var(--shadow), 0 6px 18px var(--shadow); transform: rotate(-.6deg);
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.4; text-wrap: balance; white-space: normal;
+}
+.note-msg { align-self: center; font-size: 12px; color: var(--muted); padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { all: unset; cursor: pointer; font-size: 13px; padding: 6px 11px; border-radius: 999px; border: 1px dashed var(--line); color: var(--fg); }
+.chip:hover { border-color: var(--accent); border-style: solid; }
+.chip[aria-disabled="true"] { opacity: .5; cursor: default; }
+.composer { display: grid; gap: 8px; }
+.composer-row { flex-wrap: nowrap; }
+.spacer { flex: 1; }
+
+/* Coach mode */
+.track.four { grid-template-columns: repeat(4, 1fr); }
+.track.four::before { left: 12.5%; right: 12.5%; }
+.track.four .stop-name { display: block; }
+.plan { display: grid; gap: 4px; }
+.plan-row { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 7rem 1fr; gap: 12px; padding: 10px 12px; border-radius: 9px; }
+.plan-row:hover { background: var(--accent-soft); }
+.plan-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.plan-row .k { font-family: var(--serif); font-weight: 600; font-size: 16px; }
+.plan-row .v { white-space: pre-wrap; overflow-wrap: anywhere; }
+.plan-row .v.empty { color: var(--muted); font-style: italic; }
+@media (max-width: 480px) { .plan-row { grid-template-columns: 1fr; gap: 2px; } }
+
+/* App mode menu */
+.brand { position: relative; display: flex; align-items: center; gap: 10px; }
+.brand h1 { padding-bottom: 0; }
+.app-mode-btn { all: unset; box-sizing: border-box; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--fg); transition: transform .15s ease; }
+.app-mode-btn:hover { border-color: var(--accent); }
+.app-mode-btn:focus-visible, .app-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-mode-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.app-menu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 20; width: min(320px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 2px; padding: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px var(--shadow); }
+.app-item { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 10px 12px; border-radius: 8px; }
+.app-item:hover:not([aria-disabled="true"]) { background: var(--accent-soft); }
+.app-item[aria-checked="true"] { background: var(--accent-soft); }
+.app-item[aria-disabled="true"] { cursor: default; }
+.app-item .n { font-family: var(--serif); font-weight: 600; font-size: 17px; }
+.app-item .d { grid-column: 1 / -1; font-size: 13px; color: var(--muted); }
+.app-item[aria-disabled="true"] .n { color: var(--muted); }
+.app-item .tag { align-self: center; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
+.app-item[aria-checked="true"] .tag { color: var(--accent); }
+
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; max-width: 100%; }
+.top-actions .btn { padding: 9px 12px; white-space: nowrap; font-size: 13px; }
+
+/* Keep everything inside the phone frame */
+.wrap > *, .card > *, .steps li, .others > *, .facts > * { min-width: 0; }
+.brief-text, .ocard, .other .q, .recap { overflow-wrap: anywhere; }
+@media (max-width: 480px) {
+  .card { padding: 16px; }
+  .main { padding: 16px; }
+  .table { padding-inline: 10px; }
+  .steps button { font-size: 12px; }
+  .tone { font-size: 14px; padding-inline: 6px; }
+}
+.recap { margin: 0; font-size: 13px; color: var(--muted); }
+footer { font-size: 13px; color: var(--muted); padding-top: 8px; }
+/* ---------- Instrument style pass ---------- */
+body { font-size: 15px; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--sans); font-weight: 500; letter-spacing: -.035em; }
+h1 { font-size: clamp(36px, 9vw, 52px); line-height: .95; }
+h2 { font-size: 22px; }
+h3 { font-size: 13px; font-family: var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.label { font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: .08em; color: var(--muted); }
+.hint { font-size: 12px; }
+.card { border-radius: 4px; border: 1px solid var(--line); box-shadow: none; }
+.divider { border-top-color: var(--line); }
+.brief-text, .talk-brief { font-family: var(--sans); font-weight: 500; letter-spacing: -.02em; font-size: 21px; line-height: 1.25; }
+.facts p { font-size: 15px; }
+.desc p { font-size: 14px; }
+
+/* Pills and buttons */
+.btn, .btn.quiet { border-radius: 999px; font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; padding: 9px 16px; }
+.btn { border-color: var(--fg); }
+.btn.quiet { border-color: transparent; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.tone, .voice, .mode button { border-radius: 999px; font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; }
+.tone, .voice { border-color: var(--line); color: var(--fg); padding-block: 10px; }
+.tone[aria-checked="true"], .voice[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.mode { border-radius: 999px; padding: 3px; background: transparent; border-color: var(--line); }
+.mode button { color: var(--muted); }
+.mode button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.app-mode-btn { border-color: var(--line); background: transparent; }
+.chip { border-radius: 999px; font-size: 12px; }
+
+/* Stance and stage tracks as tick rulers */
+.track { padding: 0; background: repeating-linear-gradient(90deg, var(--tick) 0 1px, transparent 1px 7px) 0 24px / 100% 30px no-repeat; }
+.track::before { display: none; }
+.stop { grid-template-rows: 46px auto; padding: 8px 2px; gap: 10px; }
+.dot { align-self: end; width: 1.5px; height: 30px; border: 0; border-radius: 0; background: var(--fg); transform: none; transition: height .18s ease, background .18s ease; }
+.stop[aria-checked="true"] .dot { width: 3px; height: 46px; background: var(--accent); transform: none; }
+.stop:hover .dot { background: var(--accent); }
+.stop-name { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* Readout */
+.readout { display: grid; grid-template-columns: 1fr auto; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ro { display: grid; gap: 6px; padding: 12px 0; align-content: start; min-width: 0; }
+.ro-top { display: flex; justify-content: space-between; gap: 12px; }
+.ro-val { font-size: clamp(24px, 6vw, 32px); font-weight: 500; letter-spacing: -.035em; line-height: 1; }
+.ro-val.big { font-size: clamp(52px, 14vw, 72px); line-height: .85; font-variant-numeric: tabular-nums; }
+.ro-heat { border-left: 1px solid var(--line); padding-left: 16px; margin-left: 16px; min-width: 7.5rem; }
+#zone { color: var(--fg); }
+
+/* Black strategy cards in the reference's flat language */
+.table { border-radius: 4px; }
+.face, .mini-ocard { font-family: var(--sans); font-weight: 500; letter-spacing: -.01em; border-radius: 10px; }
+.back-title { font-family: var(--mono); font-weight: 500; }
+.other { border-radius: 4px; }
+.other .q { font-family: var(--sans); font-style: normal; font-weight: 500; letter-spacing: -.015em; font-size: 17px; }
+.other .t { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* Steps, plan, menu */
+.steps button { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; }
+.steps button::before { height: 3px; border-radius: 0; }
+.plan-row { border-radius: 0; border-top: 1px solid var(--line); }
+.plan-row .k { font-family: var(--mono); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding-top: 3px; }
+.app-menu { border-radius: 6px; }
+.app-item { border-radius: 3px; }
+.app-item .n { font-family: var(--sans); font-weight: 500; letter-spacing: -.02em; }
+.app-item .tag { font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+.msg.user { border-radius: 4px; }
+.note-msg { font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+
+/* Full-width signal bar for moving forward, like the reference's "Got it" */
+#next-btn, #c-next-stage { flex: 1; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; padding: 15px 16px; }
+#next-btn::after, #c-next-stage::after { content: "→"; font-size: 15px; }
+.nav { gap: 8px; }
+
+/* Deck, Edit and Judge modes */
+.track.few .stop-name { display: block; }
+.deck-empty { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 32px 12px; color: var(--muted); }
+.deck-empty p { margin: 0; max-width: 34ch; }
+.add-row { display: flex; gap: 8px; }
+.add-row input { flex: 1; min-width: 0; }
+.ideas { list-style: none; margin: 0; padding: 0; display: grid; }
+.idea { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.idea .t { overflow-wrap: anywhere; min-width: 0; }
+.idea.cut .t { text-decoration: line-through; color: var(--muted); }
+.kmc { display: flex; gap: 3px; }
+.kmc button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.kmc button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.kmc button.keep[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.kmc button:focus-visible, .x:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.x { all: unset; cursor: pointer; width: 26px; height: 26px; display: grid; place-items: center; color: var(--muted); border-radius: 50%; font-size: 18px; line-height: 1; }
+.x:hover { color: var(--accent); }
+@media (max-width: 480px) { .idea { grid-template-columns: 1fr auto; } .idea .kmc { grid-column: 1; grid-row: 2; } .idea .x { grid-row: 1; grid-column: 2; } }
+.readout.three { grid-template-columns: repeat(3, 1fr); }
+.readout.three .ro-heat { min-width: 0; margin-left: 12px; padding-left: 12px; }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+.thumb { position: relative; width: 72px; height: 72px; border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .x { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; background: var(--paper); color: var(--ink); font-size: 15px; }
+label.btn { cursor: pointer; }
+#j-run { display: flex; justify-content: space-between; align-items: center; border-radius: 4px; padding: 15px 16px; }
+#j-run::after { content: "→"; font-size: 15px; }
+#j-run[disabled] { opacity: .6; cursor: default; }
+.score-v { display: grid; gap: 2px; }
+.score-n { font-size: 22px; font-weight: 500; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+
+[hidden] { display: none !important; }
+#draw-btn .short { display: none; }
+@media (max-width: 520px) {
+  #draw-btn .long { display: none; }
+  #draw-btn .short { display: inline; }
+  .top-actions .btn { padding: 9px 12px; }
+  .mode button { padding: 5px 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } .ocard.flip { animation: none; } }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <h1 id="app-title">Provoke</h1>
+      <button class="app-mode-btn" id="app-mode-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="app-menu" aria-label="Change mode">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="app-menu" id="app-menu" role="menu" aria-label="Modes" hidden></div>
+    </div>
+    <div class="top-actions">
+      <div class="mode" role="group" aria-label="Layout">
+        <button type="button" id="mode-all">All in one</button>
+        <button type="button" id="mode-flow">Step by step</button>
+      </div>
+      <button class="btn primary" type="button" id="draw-btn" title="Let chance pick a stance and tone" aria-label="Draw a random card"><span class="long">Draw a random card</span><span class="short">Random</span></button>
+    </div>
+  </div>
+
+  <div class="view" id="view-provoke">
+  <ol class="steps" data-only="flow" aria-label="Steps">
+    <li><button type="button" data-go="1">1 · Brief</button></li>
+    <li><button type="button" data-go="2">2 · Stance and tone</button></li>
+    <li><button type="button" data-go="3">3 · Provocation</button></li>
+  </ol>
+
+  <section class="card" aria-labelledby="brief-label" data-step="1">
+    <div class="card-head">
+      <span class="label" id="brief-label">Worked brief</span>
+      <div class="row">
+        <button class="btn quiet" id="delete-btn" type="button" hidden>Delete set</button>
+        <button class="btn" id="edit-btn" type="button">Edit brief</button>
+      </div>
+    </div>
+    <select id="set-select" aria-label="Choose a set of provocations"></select>
+    <p class="brief-text" id="brief-text"></p>
+
+    <form id="edit-form" class="group" hidden>
+      <hr class="divider">
+      <label class="group"><span class="label">Set name</span><input type="text" id="edit-name" maxlength="40" required></label>
+      <label class="group"><span class="label">Brief</span><textarea id="edit-brief" maxlength="600" required></textarea></label>
+      <div class="row">
+        <button class="btn primary" type="submit" id="gen-btn">Generate provocations</button>
+        <button class="btn quiet" type="button" id="cancel-btn">Cancel</button>
+      </div>
+      <p class="status" id="status" aria-live="polite">Claude writes a fresh set of 24 provocations for your brief and saves it as a new set in this browser.</p>
+    </form>
+  </section>
+
+  <article class="card" data-step="2 3">
+    <div class="group" data-step="2">
+      <div class="card-head">
+        <span class="label" id="stance-label">Stance</span>
+        <span class="hint">Inside the problem → questioning the frame</span>
+      </div>
+      <div class="track" role="radiogroup" aria-labelledby="stance-label" id="track"></div>
+    </div>
+    <div class="group" data-step="2">
+      <span class="label" id="tone-label">Tone</span>
+      <div class="tones" role="radiogroup" aria-labelledby="tone-label" id="tones"></div>
+    </div>
+    <hr class="divider" data-only="all">
+    <div class="output" aria-live="polite" data-step="3">
+      <p class="recap" id="recap" data-only="flow"></p>
+      <div class="readout">
+        <div class="ro">
+          <div class="ro-top"><span class="label">Stance</span><span class="label" id="ro-index"></span></div>
+          <div class="ro-val" id="stance-name"></div>
+        </div>
+        <div class="ro ro-heat">
+          <div class="ro-top"><span class="label">Heat</span><span class="label">/11</span></div>
+          <div class="ro-val big" id="heat-n"></div>
+          <span class="label" id="zone"></span>
+        </div>
+      </div>
+      <div class="table">
+        <button class="ocard" id="ocard" type="button" aria-pressed="false" aria-label="Provocation card. Tap to turn over for ways to keep going.">
+          <span class="inner">
+            <span class="face front"><span id="line"></span></span>
+            <span class="face back"><span class="back-title">Keep going</span><span id="next-list"></span></span>
+          </span>
+        </button>
+        <span class="hint flip-hint" id="flip-hint">Tap the card to turn it over</span>
+      </div>
+      <p class="warn" id="warn" hidden></p>
+    </div>
+    <div class="desc" data-step="2 3">
+      <p><strong id="desc-stance"></strong> <span id="does"></span></p>
+      <p><strong id="desc-tone"></strong> <span id="tone-note"></span></p>
+    </div>
+  </article>
+
+  <div class="facts" data-step="3">
+    <div class="card"><h3>Use when</h3><p id="use"></p></div>
+    <div class="card"><h3>Watch for</h3><p id="risk"></p></div>
+    <div class="card"><h3>Land it with</h3><p id="land"></p></div>
+  </div>
+
+  <h2 class="section-label" data-step="3">Same stance, other tones</h2>
+  <div class="others" id="others" data-step="3"></div>
+
+  <div class="nav" data-only="flow">
+    <button class="btn" type="button" id="back-btn">Back</button>
+    <button class="btn primary" type="button" id="next-btn">Next</button>
+  </div>
+
+  <footer>Heat combines stance and tone. Higher readings need more trust, more context and a clear reason to push.</footer>
+  </div>
+
+  <div class="view" id="view-coach" hidden>
+    <section class="card">
+      <label class="group" for="c-situation"><span class="label">What's on your mind?</span></label>
+      <textarea id="c-situation" rows="2" maxlength="600" placeholder="For example: the ring-fencing concept feels flat and the client review is on Friday"></textarea>
+      <p class="hint" style="margin:0">Optional. It keeps you focused while you answer, and stays in this browser.</p>
+    </section>
+
+    <article class="card">
+      <div class="group">
+        <div class="card-head">
+          <span class="label" id="c-stage-label">Stage</span>
+          <span class="hint">Where you want to go → how you'll get there</span>
+        </div>
+        <div class="track four" role="radiogroup" aria-labelledby="c-stage-label" id="c-track"></div>
+      </div>
+      <div class="group">
+        <span class="label" id="c-depth-label">Depth</span>
+        <div class="tones" role="radiogroup" aria-labelledby="c-depth-label" id="c-depths"></div>
+      </div>
+      <hr class="divider">
+      <div class="output">
+        <div class="card-head">
+          <h2 id="c-stage-name"></h2>
+          <button class="btn quiet" type="button" id="c-another">Another question</button>
+        </div>
+        <div class="table">
+          <button class="ocard" id="c-card" type="button" aria-pressed="false" aria-label="Coaching question. Tap to turn over for ways to work with it.">
+            <span class="inner">
+              <span class="face front"><span id="c-line"></span></span>
+              <span class="face back"><span class="back-title">Sit with it</span><span id="c-next"></span></span>
+            </span>
+          </button>
+          <span class="hint flip-hint" id="c-flip-hint">Tap the card to turn it over</span>
+        </div>
+        <label class="group" for="c-answer"><span class="label">Your answer</span></label>
+        <textarea id="c-answer" rows="3" maxlength="1200" placeholder="Write freely. There's no wrong answer."></textarea>
+        <div class="row"><button class="btn primary" type="button" id="c-next-stage"></button></div>
+      </div>
+      <div class="desc">
+        <p><strong id="c-desc-stage"></strong> <span id="c-stage-note"></span></p>
+        <p><strong id="c-desc-depth"></strong> <span id="c-depth-note"></span></p>
+      </div>
+    </article>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Your plan</h2>
+        <button class="btn quiet" type="button" id="c-clear">Clear answers</button>
+      </div>
+      <div class="plan" id="c-plan"></div>
+      <div class="row"><button class="btn" type="button" id="c-talk">Talk it through with Coach</button></div>
+    </section>
+
+    <footer>Questions follow the GROW coaching model: Goal, Reality, Options, Way forward.</footer>
+  </div>
+
+  <!-- Muse, Persona and Oracle share this deck view -->
+  <div class="view" id="view-deck" hidden>
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Brief</span>
+        <span class="hint" id="d-intro"></span>
+      </div>
+      <select class="brief-select" id="d-set" aria-label="Choose a brief"></select>
+      <p class="talk-brief" id="d-brief"></p>
+    </section>
+
+    <article class="card">
+      <div class="group">
+        <div class="card-head">
+          <span class="label" id="d-a-label"></span>
+          <span class="hint" id="d-a-hint"></span>
+        </div>
+        <div class="track" role="radiogroup" aria-labelledby="d-a-label" id="d-track"></div>
+      </div>
+      <div class="group">
+        <span class="label" id="d-b-label"></span>
+        <div class="tones" role="radiogroup" aria-labelledby="d-b-label" id="d-pills"></div>
+      </div>
+      <div class="output">
+        <div class="readout">
+          <div class="ro">
+            <div class="ro-top"><span class="label" id="d-ro-a-label"></span></div>
+            <div class="ro-val" id="d-ro-a"></div>
+            <span class="label" id="d-ro-b"></span>
+          </div>
+          <div class="ro ro-heat">
+            <div class="ro-top"><span class="label">Card</span><span class="label" id="d-total"></span></div>
+            <div class="ro-val big" id="d-n"></div>
+          </div>
+        </div>
+        <div class="table">
+          <button class="ocard" id="d-card" type="button" aria-pressed="false" aria-label="Card. Tap to turn over.">
+            <span class="inner">
+              <span class="face front"><span id="d-line"></span></span>
+              <span class="face back"><span class="back-title" id="d-back-title"></span><span id="d-next"></span></span>
+            </span>
+          </button>
+          <span class="hint flip-hint" id="d-flip-hint">Tap the card to turn it over</span>
+          <div class="deck-empty" id="d-empty" hidden>
+            <p id="d-empty-text"></p>
+            <button class="btn primary" type="button" id="d-deal">Deal the deck</button>
+          </div>
+        </div>
+        <p class="status" id="d-status" aria-live="polite"></p>
+        <div class="row">
+          <button class="btn" type="button" id="d-talk">Talk it through</button>
+          <span class="spacer"></span>
+          <button class="btn quiet" type="button" id="d-redeal">Deal a new deck</button>
+        </div>
+      </div>
+      <div class="desc">
+        <p><strong id="d-desc-a"></strong> <span id="d-note-a"></span></p>
+        <p><strong id="d-desc-b"></strong> <span id="d-note-b"></span></p>
+      </div>
+    </article>
+  </div>
+
+  <div class="view" id="view-edit" hidden>
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Your ideas for</span>
+        <span class="hint">Mark each one keep, maybe or cut</span>
+      </div>
+      <select class="brief-select" id="e-set" aria-label="Choose a brief"></select>
+      <form class="add-row" id="e-add">
+        <input type="text" id="e-input" maxlength="200" placeholder="Add an idea" aria-label="New idea">
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      <p class="hint" id="e-example-note" style="margin:0" hidden>These are examples to show how it works. Replace them with your own.</p>
+      <ul class="ideas" id="e-list"></ul>
+      <div class="readout three">
+        <div class="ro"><div class="ro-top"><span class="label">Keep</span></div><div class="ro-val big" id="e-keep"></div></div>
+        <div class="ro ro-heat"><div class="ro-top"><span class="label">Maybe</span></div><div class="ro-val big" id="e-maybe"></div></div>
+        <div class="ro ro-heat"><div class="ro-top"><span class="label">Cut</span></div><div class="ro-val big" id="e-cut"></div></div>
+      </div>
+      <div class="row"><button class="btn" type="button" id="e-talk">Talk it through with Editor</button></div>
+    </section>
+
+    <article class="card">
+      <div class="group">
+        <div class="card-head">
+          <span class="label" id="e-scope-label">Scope</span>
+          <span class="hint">One screen → the whole service</span>
+        </div>
+        <div class="track" role="radiogroup" aria-labelledby="e-scope-label" id="e-track"></div>
+      </div>
+      <div class="group">
+        <span class="label" id="e-sev-label">Severity</span>
+        <div class="tones" role="radiogroup" aria-labelledby="e-sev-label" id="e-pills"></div>
+      </div>
+      <div class="table">
+        <button class="ocard" id="e-card" type="button" aria-pressed="false" aria-label="Editing question. Tap to turn over.">
+          <span class="inner">
+            <span class="face front"><span id="e-line"></span></span>
+            <span class="face back"><span class="back-title">Do this</span><span id="e-next"></span></span>
+          </span>
+        </button>
+        <span class="hint flip-hint" id="e-flip-hint">Tap the card to turn it over</span>
+      </div>
+      <div class="desc">
+        <p><strong id="e-desc-a"></strong> <span id="e-note-a"></span></p>
+        <p><strong id="e-desc-b"></strong> <span id="e-note-b"></span></p>
+      </div>
+    </article>
+  </div>
+
+  <div class="view" id="view-judge" hidden>
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Judging against</span>
+      </div>
+      <select class="brief-select" id="j-set" aria-label="Choose a brief"></select>
+      <p class="talk-brief" id="j-brief"></p>
+      <hr class="divider">
+      <label class="label" for="j-work">The work</label>
+      <textarea id="j-work" rows="4" maxlength="2000" placeholder="Describe what you've made: what's on screen, how it works, what happens when"></textarea>
+      <div class="group" id="j-images" hidden>
+        <div class="row">
+          <label class="btn" for="j-files">Add screens</label>
+          <input type="file" id="j-files" multiple hidden>
+          <span class="hint" id="j-img-hint"></span>
+        </div>
+        <div class="thumbs" id="j-thumbs"></div>
+      </div>
+    </section>
+
+    <article class="card">
+      <div class="group">
+        <div class="card-head">
+          <span class="label" id="j-lens-label">Lens</span>
+          <span class="hint">The brief → the wider world</span>
+        </div>
+        <div class="track" role="radiogroup" aria-labelledby="j-lens-label" id="j-track"></div>
+      </div>
+      <div class="group">
+        <span class="label" id="j-sev-label">Severity</span>
+        <div class="tones" role="radiogroup" aria-labelledby="j-sev-label" id="j-pills"></div>
+      </div>
+      <div class="output">
+        <div class="readout">
+          <div class="ro">
+            <div class="ro-top"><span class="label">Lens</span></div>
+            <div class="ro-val" id="j-ro-lens"></div>
+            <span class="label" id="j-ro-sev"></span>
+          </div>
+          <div class="ro ro-heat">
+            <div class="ro-top"><span class="label">Score</span><span class="label">/5</span></div>
+            <div class="ro-val big" id="j-score"></div>
+          </div>
+        </div>
+        <div class="table">
+          <button class="ocard" id="j-card" type="button" aria-pressed="false" aria-label="Verdict. Tap to turn over for the fix.">
+            <span class="inner">
+              <span class="face front"><span id="j-line"></span></span>
+              <span class="face back"><span class="back-title">Fix</span><span id="j-next"></span></span>
+            </span>
+          </button>
+          <span class="hint flip-hint" id="j-flip-hint">Tap the card to turn it over</span>
+          <div class="deck-empty" id="j-empty" hidden><p id="j-empty-text"></p></div>
+        </div>
+        <button class="btn primary" type="button" id="j-run"></button>
+        <p class="status" id="j-status" aria-live="polite"></p>
+      </div>
+      <div class="desc">
+        <p><strong id="j-desc-a"></strong> <span id="j-note-a"></span></p>
+        <p><strong id="j-desc-b"></strong> <span id="j-note-b"></span></p>
+      </div>
+    </article>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Scorecard</h2>
+        <button class="btn quiet" type="button" id="j-clear">Clear</button>
+      </div>
+      <div class="plan" id="j-scorecard"></div>
+      <div class="row"><button class="btn" type="button" id="j-talk">Talk it through with Critic</button></div>
+    </section>
+  </div>
+
+  <div class="view" id="view-talk" hidden>
+    <section class="card">
+      <div class="card-head">
+        <span class="label">Talking about</span>
+        <span class="hint">Add or edit briefs in Provoke</span>
+      </div>
+      <select id="talk-set" aria-label="Choose a brief to talk about"></select>
+      <p class="talk-brief" id="talk-brief"></p>
+      <div class="group">
+        <span class="label" id="voice-label">Talk with</span>
+        <div class="voices" role="radiogroup" aria-labelledby="voice-label" id="voices"></div>
+        <p class="note" id="voice-note"></p>
+      </div>
+    </section>
+
+    <section class="card chat" aria-label="Conversation">
+      <div class="log" id="log" aria-live="polite"></div>
+      <div class="chips" id="chips"></div>
+      <form class="composer" id="chat-form">
+        <textarea id="chat-input" rows="2" maxlength="2000" placeholder="Share your idea, what's bothering you, or where you're stuck"></textarea>
+        <div class="row composer-row">
+          <button class="btn quiet" type="button" id="clear-chat">Start over</button>
+          <span class="spacer"></span>
+          <button class="btn" type="button" id="stop-btn" hidden>Stop</button>
+          <button class="btn primary" type="submit" id="send-btn">Send</button>
+        </div>
+      </form>
+      <p class="status" id="chat-status" aria-live="polite"></p>
+    </section>
+  </div>
+</div>
+
+<script>
+const TONES = [
+  { name: "Playful", note: "Feels like a game. Low threat, high energy. Good early in a project, with junior designers, or when a room is tired." },
+  { name: "Direct", note: "A clear challenge with no padding and no edge. The default for working sessions with peers." },
+  { name: "Confrontational", note: "Lands hard and sticks. Needs trust, seniority and a clear reason. Agree it up front before using it in front of a client." }
+];
+
+const STANCES = [
+  { name: "Naive Questioner", does: "Asks the obvious question nobody asked.",
+    use: "The team has accepted the brief without testing it.",
+    risk: "Sounding uninformed to a client who already debated it.",
+    land: "Which assumption did that expose, and does it hold?" },
+  { name: "Reframer", does: "Changes whose problem it is, or what the problem is.",
+    use: "Everyone is designing for one user alone.",
+    risk: "Reframing so often that nothing gets built.",
+    land: "Which framing gives us the most useful problem to solve?" },
+  { name: "Borrower", does: "Pulls in a pattern from a different world.",
+    use: "Ideas all look like competitor products.",
+    risk: "Lifting a surface pattern without the reason it works.",
+    land: "What's the underlying principle, and does it transfer?" },
+  { name: "Constrainer", does: "Sets an artificial limit to force a new route.",
+    use: "The solution is bloated or converging too early.",
+    risk: "The constraint becomes the design rather than a lens.",
+    land: "What did the limit reveal that we should keep?" },
+  { name: "Exaggerator", does: "Pushes one variable to the absurd.",
+    use: "Ideas are incremental and safe.",
+    risk: "The room laughs and moves on without harvesting anything.",
+    land: "Which part of the extreme version is worth pulling back into reality?" },
+  { name: "Inverter", does: "Designs the worst version, then flips it.",
+    use: "Pain points are vague or the team is too polite.",
+    risk: "It turns into a moan session about the client.",
+    land: "Which flipped answer is the strongest principle to design to?" },
+  { name: "Devil's Advocate", does: "Argues hard against the favoured idea.",
+    use: "The team is in love with one concept.",
+    risk: "The designer hears it as a verdict, not a test.",
+    land: "What would make the idea survive that objection?" },
+  { name: "Heretic", does: "Challenges the brief, the model or the value itself.",
+    use: "Polishing a flawed premise, or a strategic moment.",
+    risk: "Undermining a brief the team has no power to change.",
+    land: "What's the version of this we can actually take to the client?" }
+];
+
+// Back of the card: prompts that open the provocation up into more ideas
+const NEXT = [
+  ["List five things the team assumes are true. Pick the shakiest one.",
+   "Answer the question as if you'd never used a product like this.",
+   "Sketch the version where the obvious step simply isn't there."],
+  ["Rewrite the brief from three different people's point of view.",
+   "Swap the verb in the brief for another one. Manage, protect, plan, celebrate. What changes?",
+   "Pick the framing that makes you most uneasy and sketch one idea for it."],
+  ["Name three worlds that solve a similar problem. Steal one move from each.",
+   "Ask why that pattern works, not what it looks like.",
+   "Combine two borrowed moves into a single concept."],
+  ["Sketch three ideas inside the limit in ten minutes.",
+   "Now remove the limit entirely. What opens up?",
+   "Keep the one detail from the constrained idea that beats today's design."],
+  ["Push it ten times further. What happens then?",
+   "Find the moment in the extreme story that people would love.",
+   "Dial it back halfway. What does that version look like?"],
+  ["Turn each bad idea into its opposite, written as a design principle.",
+   "Spot which bad ideas competitors already ship.",
+   "Pick the principle hardest to deliver and sketch it."],
+  ["Write the objection down. Generate three ways the idea could answer it.",
+   "Find who the objection is most true for, and design for them.",
+   "Ask what you'd have to believe for the idea to fail. How could you test that?"],
+  ["Describe the world where the heresy wins. Who thrives in it?",
+   "What's the smallest step towards that world you could ship now?",
+   "Write the headline if a competitor did this first."]
+];
+
+const BUILT_IN = [
+  { id: "banking", name: "Business banking: ring-fencing",
+    brief: "A business banking feature that lets owners ring-fence money for tax, salaries, R&D and other commitments.",
+    lines: [
+      ["Silly question: what if the money never had to move at all? How would the account know what's spoken for?",
+       "Who decided owners should sort their money into pots, and what would happen if nobody had to?",
+       "Twelve pot screens in, and nobody has asked what owners actually want. What would they say?"],
+      ["Swap the hero. How does ring-fencing look from the accountant's side of the desk?",
+       "What changes if the real problem is knowing what's safe to spend, not setting money aside?",
+       "This could just be a way to keep deposits in the bank. What would make it genuinely about the owner?"],
+      ["How does a restaurant kitchen prep before service? What would prepped money look like?",
+       "Which three places outside banking set resources aside well, and what could we take from each?",
+       "Every bank already has pots. What would make a business switch for yours?"],
+      ["Do it with no app and one text message a month. What would that message say?",
+       "If ring-fencing had to work from day one with zero setup, what would have to be true?",
+       "You get one pot, no more. What goes in it, and how would you defend each pot you add back?"],
+      ["Imagine the account sets aside the exact tax owed, to the penny, the second money lands. What happens next?",
+       "How would this work for a sole trader and a 500-person firm on the same day?",
+       "Imagine owners ignore this feature for a year. What would they miss, and how would they know?"],
+      ["Let's design the most stressful tax season possible. What's on the list?",
+       "What are all the ways a business could end up short on payday, and what's the flip side of each?",
+       "Your current design already causes some of those shortfalls. Where, and what would fix them?"],
+      ["I'll be the cynical finance director for ten minutes. What would it take to win me over?",
+       "What's the strongest case against ring-fencing inside the bank, and how would you answer it?",
+       "This only works for owners who are already disciplined with money. How would it work for the ones who aren't?"],
+      ["Picture a world where the bank never holds money aside. Who does the job instead, and how?",
+       "What would it look like if the bank stopped deciding what's safe to spend?",
+       "If this succeeds, the bank holds more idle cash and the owner gets nothing for it. What would make it a fair deal?"]
+    ] },
+  { id: "health", name: "Health insurance: first GP visit",
+    brief: "Help new members of a health insurer book their first GP appointment.",
+    lines: [
+      ["Silly question: what if nobody had to book at all? What would that look like?",
+       "Who decided booking is the first step for a new member, and what else could come first?",
+       "A week on the booking flow, and nobody has asked why booking exists. What's the answer?"],
+      ["Swap the hero. How does this look from the receptionist's side of the desk?",
+       "What changes if the real problem is knowing whether you're covered, not booking?",
+       "This solves the insurer's problem and calls it the member's. What would the member's version look like?"],
+      ["How would a festival box office handle this? Or a pub quiz?",
+       "Which three industries handle first visits better than healthcare, and what could we take from each?",
+       "Healthcare keeps copying healthcare. Where else could we look for something genuinely new?"],
+      ["Do it with no screens: a postcard and one phone call. What's on the postcard?",
+       "One tap to a confirmed appointment. What has to be true for that to work?",
+       "Cut the flow to a third of its steps by Friday. Which steps survive, and why?"],
+      ["Imagine the appointment books itself the moment you sign up. What happens next?",
+       "How would this work for ten million members on day one?",
+       "Imagine booking took a month. What would members do instead, and what does that tell you?"],
+      ["Let's design the worst possible booking experience. What's on the list?",
+       "What are all the ways this flow could make someone give up, and what's the flip side of each?",
+       "Your current design already does some things on the worst-case list. Which ones, and what would replace them?"],
+      ["I'll be the grumpy stakeholder for ten minutes. What would it take to convince me?",
+       "What's the strongest case against your favourite idea, and how would you answer it?",
+       "This idea only works if members behave the way you want. How would it work for the ones who don't?"],
+      ["Picture a world where the insurer never touches booking. Who steps in, and how?",
+       "What would it look like if the insurer got out of the booking business entirely?",
+       "If this succeeds, who loses? What would you change if the answer is nobody?"]
+    ] },
+  { id: "returns", name: "Online fashion: returns",
+    brief: "Make it easier for customers of an online fashion retailer to return items they don't want.",
+    lines: [
+      ["Silly question: what if nobody ever had to send anything back? What would that take?",
+       "Who decided a return starts with a form, and what could replace it?",
+       "The returns flow is polished, and nobody has asked why so many orders come back. What's the answer?"],
+      ["Tell me this story from the back of the courier's van. What do you see?",
+       "What changes if the real problem is not knowing whether it'll fit, not sending it back?",
+       "Smoother returns can just help the business over-sell. What would a version that helps the customer look like?"],
+      ["A library's whole service is returns. What could we borrow from one?",
+       "Which three industries make giving something back feel good, and what could we take from each?",
+       "Every retailer copies the same returns portal. What would make yours unrecognisable?"],
+      ["Do it with no label, no box and no post office. How does the item get back?",
+       "One tap to start a return, refunded before it ships. What has to be true?",
+       "Halve the return rate without making returns any harder. Where do you start?"],
+      ["Imagine every order arrives in three sizes and you keep one. What happens next?",
+       "How would this cope with a million returns the week after Christmas?",
+       "Imagine returns cost customers nothing forever. What would that do to the business, and how would you design for it?"],
+      ["Let's design the most humiliating returns experience possible. What's on the list?",
+       "What are all the reasons someone abandons a return, and what's the flip side of each?",
+       "Your current flow already makes people feel guilty. Where, and what would replace that feeling?"],
+      ["I'll be the sceptical CFO for ten minutes. What would it take to convince me?",
+       "What's the strongest case for charging for returns, and how would you answer it?",
+       "Easy returns encourage ordering three sizes. How would you design so you're not feeding the problem?"],
+      ["Picture a world where the retailer never takes anything back. Who steps in, and how?",
+       "What would it look like if this retailer sold fewer things that people send back?",
+       "If this succeeds, more clothes travel twice and end up in landfill. What would a version that's good for the planet look like?"]
+    ] }
+];
+
+// ---------- State ----------
+let custom = [];
+let setId = "banking", s = 0, t = 0, mode = "all", step = 1;
+try {
+  custom = JSON.parse(localStorage.getItem("prov-sets") || "[]");
+  if (!Array.isArray(custom)) custom = [];
+  const saved = JSON.parse(localStorage.getItem("prov") || "null");
+  if (saved) { s = saved.s ?? 0; t = saved.t ?? 0; setId = saved.setId ?? setId; mode = saved.mode === "flow" ? "flow" : "all"; }
+} catch (e) { custom = []; }
+
+const allSets = () => [...BUILT_IN, ...custom];
+const currentSet = () => allSets().find(x => x.id === setId) || BUILT_IN[0];
+function persist() {
+  try {
+    localStorage.setItem("prov", JSON.stringify({ s, t, setId, mode }));
+    localStorage.setItem("prov-sets", JSON.stringify(custom));
+  } catch (e) {}
+}
+
+// ---------- Controls ----------
+const $ = id => document.getElementById(id);
+const track = $("track"), tonesEl = $("tones"), select = $("set-select");
+
+STANCES.forEach((st, i) => {
+  const b = document.createElement("button");
+  b.className = "stop"; b.type = "button"; b.setAttribute("role", "radio");
+  b.innerHTML = `<span class="dot"></span><span class="stop-name"></span>`;
+  b.querySelector(".stop-name").textContent = st.name;
+  b.setAttribute("aria-label", `${i + 1}. ${st.name}`);
+  b.addEventListener("click", () => { s = i; render(); });
+  track.appendChild(b);
+});
+TONES.forEach((tn, i) => {
+  const b = document.createElement("button");
+  b.className = "tone"; b.type = "button"; b.setAttribute("role", "radio"); b.textContent = tn.name;
+  b.addEventListener("click", () => { t = i; render(); });
+  tonesEl.appendChild(b);
+});
+function arrows(group, get, set, n) {
+  group.addEventListener("keydown", e => {
+    const d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0;
+    if (!d) return; e.preventDefault(); set(Math.max(0, Math.min(n - 1, get() + d))); render();
+    group.children[get()].focus();
+  });
+}
+arrows(track, () => s, v => s = v, STANCES.length);
+arrows(tonesEl, () => t, v => t = v, TONES.length);
+
+function fillSelect() {
+  [select, $("talk-set"), ...document.querySelectorAll(".brief-select")].forEach(sel => {
+    sel.innerHTML = "";
+    const add = (label, sets) => {
+      if (!sets.length) return;
+      const g = document.createElement("optgroup"); g.label = label;
+      sets.forEach(x => { const o = document.createElement("option"); o.value = x.id; o.textContent = x.name; g.appendChild(o); });
+      sel.appendChild(g);
+    };
+    add("Examples", BUILT_IN);
+    add("Your sets", custom);
+    sel.value = currentSet().id;
+  });
+}
+select.addEventListener("change", () => { setId = select.value; closeEdit(); render(); });
+
+// ---------- Render ----------
+const zone = n => n <= 3 ? "Comfort zone" : n <= 6 ? "Stretch" : "Discomfort";
+function render() {
+  const set = currentSet(), st = STANCES[s], tn = TONES[t];
+  setId = set.id;
+  $("talk-set").value = set.id;
+  document.querySelectorAll(".brief-select").forEach(el => { el.value = set.id; });
+  $("brief-text").textContent = set.brief;
+  $("delete-btn").hidden = !custom.some(x => x.id === set.id);
+  [...track.children].forEach((b, i) => { b.setAttribute("aria-checked", i === s); b.tabIndex = i === s ? 0 : -1; });
+  [...tonesEl.children].forEach((b, i) => { b.setAttribute("aria-checked", i === t); b.tabIndex = i === t ? 0 : -1; });
+  $("stance-name").textContent = st.name;
+  const score = s + 1 + t * 2;
+  $("zone").textContent = zone(score);
+  $("heat-n").textContent = score;
+  $("ro-index").textContent = `${String(s + 1).padStart(2, "0")}/08`;
+  const lineEl = $("line"), text = set.lines[s][t];
+  if (lineEl.textContent !== text) {
+    const card = $("ocard");
+    setTurned(false);
+    const list = $("next-list"); list.innerHTML = "";
+    NEXT[s].forEach((n, i) => {
+      const row = document.createElement("span"); row.className = "next-item";
+      const num = document.createElement("b"); num.textContent = i + 1;
+      const txt = document.createElement("span"); txt.textContent = n;
+      row.append(num, txt); list.appendChild(row);
+    });
+    if (lineEl.textContent && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      card.classList.remove("flip"); void card.offsetWidth; card.classList.add("flip");
+      setTimeout(() => { lineEl.textContent = text; }, 190);
+    } else lineEl.textContent = text;
+  }
+  $("desc-stance").textContent = st.name + ".";
+  $("does").textContent = st.does;
+  $("desc-tone").textContent = tn.name + ".";
+  $("tone-note").textContent = tn.note;
+  $("use").textContent = st.use;
+  $("risk").textContent = st.risk;
+  $("land").textContent = st.land;
+  $("recap").textContent = `${set.name} · ${st.name} · ${tn.name}`;
+  const warn = $("warn");
+  warn.hidden = score < 9;
+  warn.textContent = "Check before using: do you have the relationship and the room's permission to push this hard?";
+  const others = $("others");
+  others.innerHTML = "";
+  TONES.forEach((o, i) => {
+    if (i === t) return;
+    const b = document.createElement("button");
+    b.className = "other"; b.type = "button";
+    b.innerHTML = `<span class="q"></span><span class="t"></span>`;
+    b.querySelector(".t").textContent = o.name;
+    b.querySelector(".q").textContent = set.lines[s][i];
+    b.addEventListener("click", () => { t = i; render(); });
+    others.appendChild(b);
+  });
+  persist();
+}
+
+// ---------- Edit and generate ----------
+const form = $("edit-form"), status = $("status"), genBtn = $("gen-btn");
+let sample = null, ctl = null;
+const DEFAULT_STATUS = "Claude writes a fresh set of 24 provocations for your brief and saves it as a new set in this browser.";
+
+function openEdit() {
+  const set = currentSet();
+  $("edit-name").value = custom.some(x => x.id === set.id) ? set.name : "";
+  $("edit-brief").value = set.brief;
+  form.hidden = false; $("edit-btn").hidden = true;
+  setStatus(sample === null ? "Generating needs Claude, which isn't available in this view yet." : DEFAULT_STATUS, sample === null);
+  $("edit-name").focus();
+}
+function closeEdit() {
+  ctl?.abort();
+  form.hidden = true; $("edit-btn").hidden = false;
+  genBtn.disabled = false; genBtn.textContent = "Generate provocations";
+}
+function setStatus(msg, err) { status.textContent = msg; status.classList.toggle("err", !!err); }
+
+function setTurned(on) {
+  const card = $("ocard");
+  card.classList.toggle("turned", on);
+  card.setAttribute("aria-pressed", on);
+  $("flip-hint").textContent = on ? "Tap again to see the provocation" : "Tap the card to turn it over";
+}
+$("ocard").addEventListener("click", () => setTurned(!$("ocard").classList.contains("turned")));
+$("edit-btn").addEventListener("click", openEdit);
+$("draw-btn").addEventListener("click", () => {
+  let ns, nt;
+  do { ns = Math.floor(Math.random() * STANCES.length); nt = Math.floor(Math.random() * TONES.length); } while (ns === s && nt === t);
+  s = ns; t = nt; closeEdit(); render();
+  if (mode === "flow") goStep(3);
+  else $("ocard").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+});
+$("cancel-btn").addEventListener("click", closeEdit);
+$("delete-btn").addEventListener("click", () => {
+  const btn = $("delete-btn");
+  if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to delete"; return; }
+  btn.dataset.confirm = ""; btn.textContent = "Delete set";
+  custom = custom.filter(x => x.id !== setId);
+  setId = BUILT_IN[0].id; fillSelect(); render();
+});
+
+function buildPrompt(brief) {
+  const stances = STANCES.map((st, i) => `${i + 1}. ${st.name}: ${st.does}`).join("\n");
+  const tones = TONES.map(tn => `- ${tn.name}: ${tn.note}`).join("\n");
+  return `You are coaching designers to broaden their thinking by provoking them about a design brief.
+
+Brief:
+"""${brief}"""
+
+Write one provocation for each of these 8 stances, each in 3 tones (24 in total).
+
+Stances, from gentle to radical:
+${stances}
+
+Tones:
+${tones}
+
+Rules:
+- Each provocation is something a coach says out loud to a designer: one or two short sentences, specific to this brief.
+- The three tones of one stance should make the same move with different force.
+- Every provocation must open up thinking: end with an open question (what, how, who, which, where or why) or an invitation to generate options. Never a yes/no question, never a verdict that closes the conversation.
+- UK English, plain language, no em dashes, no jargon.
+
+Reply with only JSON in this shape:
+{"lines": [["playful", "direct", "confrontational"], ... 8 entries in stance order]}`;
+}
+
+form.addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("edit-name").value.trim(), brief = $("edit-brief").value.trim();
+  if (!name || !brief) return;
+  if (!sample) { setStatus("Generating needs Claude, which isn't available in this view.", true); return; }
+  ctl = new AbortController();
+  genBtn.disabled = true; genBtn.textContent = "Generating…";
+  setStatus("Thinking. This usually takes 20 to 60 seconds.");
+  try {
+    const out = await sample.json(buildPrompt(brief), { signal: ctl.signal });
+    const lines = out && out.lines;
+    const ok = Array.isArray(lines) && lines.length === 8 && lines.every(r => Array.isArray(r) && r.length === 3 && r.every(x => typeof x === "string" && x.trim()));
+    if (!ok) throw { code: "bad_shape" };
+    const id = "c" + Date.now();
+    custom.push({ id, name, brief, lines: lines.map(r => r.map(x => x.trim())) });
+    setId = id;
+    closeEdit(); fillSelect(); render();
+  } catch (err) {
+    genBtn.disabled = false; genBtn.textContent = "Generate provocations";
+    const code = err && err.code;
+    if (code === "cancelled") return;
+    const msg = {
+      not_granted: "Claude wasn't allowed for this page, so it can't generate a set.",
+      sampling_disabled: "Claude isn't available for this account.",
+      rate_limited: "Too many requests just now. Try again in a minute.",
+      refused: "Claude declined that brief. Try rewording it.",
+      invalid_json: "The reply came back in the wrong format. Try again.",
+      bad_shape: "The reply was incomplete. Try again."
+    }[code] || "Something went wrong. Try again.";
+    setStatus(msg, true);
+    if (code === "not_granted" || code === "sampling_disabled") genBtn.disabled = true;
+  }
+});
+
+const appBtn = $("app-mode-btn"), appMenu = $("app-menu");
+
+// ---------- Talk mode ----------
+const VOICES = [
+  { id: "partner", name: "Thinking partner", note: "Curious and even-handed. A mix of questions, observations and the odd suggestion.",
+    rule: "Be a curious, even-handed thinking partner. Mix questions, observations and the occasional suggestion." },
+  { id: "provocateur", name: "Provocateur", note: "Challenges assumptions and the frame of the brief.",
+    rule: "Be a provocateur. Challenge assumptions and the frame: reframe, borrow from other worlds, exaggerate, invert." },
+  { id: "coach", name: "Coach", note: "Doesn't give answers. Helps you find your own.",
+    rule: "Be a coach. Do not give answers or ideas of your own. Reflect back what you hear and ask questions that help them find their own way." },
+  { id: "muse", name: "Muse", note: "Brings in references from other fields and explains why they work.",
+    rule: "Be a muse. Bring in specific references from other industries, nature, history and culture, and say what principle each one offers." },
+  { id: "persona", name: "Persona", note: "Speaks as the person most affected by the brief. Tell it who to play.",
+    rule: "Speak in the first person as the person most affected by this brief, in their own words, worries and priorities. Stay in character. If the designer names someone else to play, become them." },
+  { id: "editor", name: "Editor", note: "Narrows down, cuts and prioritises.",
+    rule: "Be an editor. Help them narrow down: cut, merge, prioritise and push towards the one idea worth pursuing." },
+  { id: "oracle", name: "Oracle", note: "Looks ahead at consequences, success and failure.",
+    rule: "Be an oracle. Look ahead: second-order effects, how this might fail or succeed over months and years, who it affects later." },
+  { id: "critic", name: "Critic", note: "Honest, specific critique of whatever you describe.",
+    rule: "Be a critic. Give honest, specific critique of what they describe: name what's working and the one thing most worth fixing." }
+];
+const CHIPS = [
+  { label: "Where should I start?", text: "Where should I start?" },
+  { label: "Poke holes in my idea", text: "Poke holes in the idea I've described so far. If I haven't described one, ask me for it." },
+  { label: "Push harder", text: "Push harder." },
+  { label: "Go gentler", text: "Go gentler." },
+  { label: "Deal me a card", text: "Deal me a card.", kind: "card" },
+  { label: "Sum up so far", text: "Sum up the ideas we have so far as a short list, then suggest which one to take further." }
+];
+
+let voiceId = "partner", msgs = [], chatSetId = null, busy = false, chatCtl = null;
+try { const v = localStorage.getItem("prov-voice"); if (VOICES.some(x => x.id === v)) voiceId = v; } catch (e) {}
+const voice = () => VOICES.find(v => v.id === voiceId) || VOICES[0];
+const logEl = $("log"), chatInput = $("chat-input"), sendBtn = $("send-btn"), stopBtn = $("stop-btn");
+
+function chatStatus(msg, err) { const el = $("chat-status"); el.textContent = msg || ""; el.classList.toggle("err", !!err); }
+
+function greeting() {
+  return { role: "assistant", voice: voiceId,
+    content: `Let's talk about this brief. Tell me your current idea, what's bothering you about it, or ask me to throw something at you. Where would you like to start?` };
+}
+function saveChat() {
+  try { localStorage.setItem("prov-chat-" + chatSetId, JSON.stringify(msgs.map(({ role, content, display, voice, kind }) => ({ role, content, display, voice, kind })))); } catch (e) {}
+}
+function loadChat() {
+  chatCtl?.abort();
+  chatSetId = setId;
+  msgs = [];
+  try { const saved = JSON.parse(localStorage.getItem("prov-chat-" + chatSetId) || "null"); if (Array.isArray(saved)) msgs = saved.filter(m => m && m.content); } catch (e) {}
+  if (!msgs.length) msgs = [greeting()];
+  renderLog();
+}
+
+function msgEl(m) {
+  if (m.role === "note") { const n = document.createElement("p"); n.className = "note-msg"; n.textContent = m.content; return n; }
+  const el = document.createElement("div");
+  if (m.role === "user") { el.className = "msg user"; el.textContent = m.display || m.content; return el; }
+  const v = VOICES.find(x => x.id === m.voice) || VOICES[0];
+  el.className = "msg ai" + (m.kind === "card" && m.content ? " card-msg" : "");
+  const who = document.createElement("span"); who.className = "who"; who.textContent = v.name;
+  const body = document.createElement("span");
+  el.append(who, body);
+  m.body = body;
+  fillBody(m);
+  return el;
+}
+function fillBody(m) {
+  const body = m.body; if (!body) return;
+  body.className = "";
+  if (!m.content) { body.className = "thinking"; body.textContent = "Thinking…"; return; }
+  if (m.kind === "card") { body.className = "mini-ocard"; body.parentElement.classList.add("card-msg"); }
+  body.textContent = m.content;
+}
+function renderLog() {
+  logEl.innerHTML = "";
+  msgs.forEach(m => logEl.appendChild(msgEl(m)));
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function renderTalk() {
+  if (chatSetId !== setId) loadChat();
+  $("talk-brief").textContent = currentSet().brief;
+  [...$("voices").children].forEach((b, i) => { const on = VOICES[i].id === voiceId; b.setAttribute("aria-checked", on); b.tabIndex = on ? 0 : -1; });
+  $("voice-note").textContent = voice().note;
+  [...$("chips").children].forEach(c => c.setAttribute("aria-disabled", busy));
+  sendBtn.disabled = busy; stopBtn.hidden = !busy;
+}
+
+VOICES.forEach(v => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "voice"; b.setAttribute("role", "radio"); b.textContent = v.name;
+  b.addEventListener("click", () => setVoice(v.id));
+  $("voices").appendChild(b);
+});
+arrows($("voices"), () => VOICES.findIndex(v => v.id === voiceId), i => setVoice(VOICES[i].id, true), VOICES.length);
+function setVoice(id, quiet) {
+  if (id === voiceId) return;
+  voiceId = id;
+  try { localStorage.setItem("prov-voice", id); } catch (e) {}
+  const last = msgs[msgs.length - 1];
+  if (last && last.role === "note") msgs.pop();
+  if (msgs.length > 1) { msgs.push({ role: "note", content: `Now talking with ${voice().name}` }); saveChat(); renderLog(); }
+  renderTalk();
+}
+CHIPS.forEach(c => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.textContent = c.label;
+  b.addEventListener("click", () => { if (!busy) send(c.text, c.label, c.kind); });
+  $("chips").appendChild(b);
+});
+
+function rules() {
+  const v = voice();
+  return `You are talking with a designer inside a coaching tool called Provoke. You are discussing this design brief:
+"""${currentSet().brief}"""
+
+Your current role: ${v.name}. ${v.rule}
+
+Rules for every reply:
+- Keep it short: two to five sentences, or a short list when asked to sum up.
+- Build on what the designer has said. Don't lecture or repeat the brief back.
+- End most replies with one open question (what, how, who, which, where or why). Never a yes/no question.
+- "Push harder" means more challenge and less comfort. "Go gentler" means softer and more supportive.
+- If asked to deal a card, reply with one provocation of under 25 words and nothing else: no preamble, no quote marks.
+- Plain text only: no headings, bold or markdown. A simple list may use "- " at the start of lines.
+- UK English, plain language, no em dashes.`;
+}
+
+async function send(text, display, kind) {
+  text = text.trim();
+  if (!text || busy) return;
+  if (!sample) { chatStatus("Talking needs Claude, which isn't available in this view.", true); return; }
+  chatStatus("");
+  const userMsg = { role: "user", content: text, display };
+  const ai = { role: "assistant", content: "", voice: voiceId, kind };
+  msgs.push(userMsg);
+  const history = msgs.filter(m => m.role === "user" || m.role === "assistant").slice(-30).map(m => ({ role: m.role, content: m.content }));
+  msgs.push(ai);
+  logEl.appendChild(msgEl(userMsg));
+  logEl.appendChild(msgEl(ai));
+  logEl.scrollTop = logEl.scrollHeight;
+  busy = true; renderTalk();
+  chatCtl = new AbortController();
+  try {
+    const { text: out } = await sample([{ role: "user", content: rules() }, ...history], {
+      cache: false, signal: chatCtl.signal,
+      onText: ({ text: t }) => { ai.content = t; fillBody(ai); logEl.scrollTop = logEl.scrollHeight; }
+    });
+    ai.content = out.trim(); fillBody(ai);
+  } catch (err) {
+    const code = err && err.code;
+    if (err && err.text) { ai.content = err.text; fillBody(ai); }
+    else { msgs.splice(msgs.indexOf(ai), 1); ai.body?.parentElement?.remove(); }
+    if (code !== "cancelled") chatStatus({
+      not_granted: "Claude wasn't allowed for this page, so it can't reply.",
+      sampling_disabled: "Claude isn't available for this account.",
+      rate_limited: "Too many messages just now. Try again in a minute.",
+      refused: "Claude declined to answer that. Try rewording it."
+    }[code] || "Something went wrong. Try sending again.", true);
+  } finally {
+    busy = false; chatCtl = null; saveChat(); renderTalk();
+  }
+}
+
+$("chat-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = chatInput.value;
+  if (!v.trim() || busy) return;
+  chatInput.value = "";
+  send(v);
+});
+chatInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("chat-form").requestSubmit(); }
+});
+stopBtn.addEventListener("click", () => chatCtl?.abort());
+$("clear-chat").addEventListener("click", () => {
+  const btn = $("clear-chat");
+  if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to clear"; return; }
+  btn.dataset.confirm = ""; btn.textContent = "Start over";
+  chatCtl?.abort();
+  msgs = [greeting()]; saveChat(); renderLog(); chatStatus("");
+});
+$("talk-set").addEventListener("change", e => { setId = e.target.value; select.value = setId; closeEdit(); render(); renderTalk(); });
+
+// ---------- Coach mode ----------
+const C_STAGES = [
+  { name: "Goal", note: "Get clear on what you want from this.",
+    sit: ["Write your answer in one sentence.", "Ask yourself \"and what else?\" three times.", "Check the goal is yours, not someone else's."],
+    q: [
+      ["What do you want to have by the end of this week?", "What would a good outcome from today look like?"],
+      ["What would make this project feel worth it to you?", "If this went brilliantly, what would be different?"],
+      ["What do you want to be known for on this project?", "Whose definition of success are you working to?"]
+    ] },
+  { name: "Reality", note: "Look honestly at where things stand.",
+    sit: ["List the facts, then list the feelings, separately.", "Describe what a camera would see, not what you think it means.", "Notice what you left out, and add it."],
+    q: [
+      ["What have you tried so far, and what happened?", "What's actually in your way right now?"],
+      ["What are you avoiding?", "What do you know that you haven't said out loud yet?"],
+      ["What story are you telling yourself about this?", "What does this situation ask of you that feels uncomfortable?"]
+    ] },
+  { name: "Options", note: "Widen the field before choosing.",
+    sit: ["Write at least five options before judging any.", "Add one that feels slightly silly.", "Circle the one you have the most energy for."],
+    q: [
+      ["What are three things you could do next?", "Who could help, and how?"],
+      ["What would you do if you knew it couldn't fail?", "What would you tell a colleague in your position to do?"],
+      ["What would the bravest version of you do?", "What would you try if nobody was watching?"]
+    ] },
+  { name: "Way forward", note: "Commit to a next step you'll actually take.",
+    sit: ["Make it small enough to start today.", "Put a day and time on it.", "Tell someone what you've decided."],
+    q: [
+      ["What's the first step, and when will you take it?", "What will you do in the next 24 hours?"],
+      ["What might get in the way, and how will you handle it?", "How will you know it's working?"],
+      ["What are you committing to, and who will you tell?", "What will you let go of to make room for this?"]
+    ] }
+];
+const C_DEPTHS = [
+  { name: "Practical", note: "About the task. Quick to answer. Good when you need momentum." },
+  { name: "Reflective", note: "About your thinking. Takes a moment. Good when you're going round in circles." },
+  { name: "Deep", note: "About you and what matters to you. Take your time, and only go here when it feels right." }
+];
+let cStage = 0, cDepth = 0, cAlt = 0, cAnswers = ["", "", "", ""], cSituation = "";
+try {
+  const c = JSON.parse(localStorage.getItem("prov-coach") || "null");
+  if (c) { cStage = c.stage || 0; cDepth = c.depth || 0; cSituation = c.situation || ""; if (Array.isArray(c.answers) && c.answers.length === 4) cAnswers = c.answers.map(String); }
+} catch (e) {}
+function saveCoach() {
+  try { localStorage.setItem("prov-coach", JSON.stringify({ stage: cStage, depth: cDepth, situation: cSituation, answers: cAnswers })); } catch (e) {}
+}
+
+C_STAGES.forEach((st, i) => {
+  const b = document.createElement("button");
+  b.className = "stop"; b.type = "button"; b.setAttribute("role", "radio");
+  b.innerHTML = `<span class="dot"></span><span class="stop-name"></span>`;
+  b.querySelector(".stop-name").textContent = st.name;
+  b.setAttribute("aria-label", `${i + 1}. ${st.name}`);
+  b.addEventListener("click", () => { cStage = i; cAlt = 0; renderCoach(); });
+  $("c-track").appendChild(b);
+});
+C_DEPTHS.forEach((d, i) => {
+  const b = document.createElement("button");
+  b.className = "tone"; b.type = "button"; b.setAttribute("role", "radio"); b.textContent = d.name;
+  b.addEventListener("click", () => { cDepth = i; cAlt = 0; renderCoach(); });
+  $("c-depths").appendChild(b);
+});
+arrows($("c-track"), () => cStage, v => { cStage = v; cAlt = 0; renderCoach(); }, C_STAGES.length);
+arrows($("c-depths"), () => cDepth, v => { cDepth = v; cAlt = 0; renderCoach(); }, C_DEPTHS.length);
+
+function setCoachTurned(on) {
+  const card = $("c-card");
+  card.classList.toggle("turned", on);
+  card.setAttribute("aria-pressed", on);
+  $("c-flip-hint").textContent = on ? "Tap again to see the question" : "Tap the card to turn it over";
+}
+$("c-card").addEventListener("click", () => setCoachTurned(!$("c-card").classList.contains("turned")));
+$("c-another").addEventListener("click", () => { cAlt = (cAlt + 1) % 2; renderCoach(); });
+
+let cShownStage = -1;
+function renderCoach() {
+  const st = C_STAGES[cStage], d = C_DEPTHS[cDepth];
+  [...$("c-track").children].forEach((b, i) => { b.setAttribute("aria-checked", i === cStage); b.tabIndex = i === cStage ? 0 : -1; });
+  [...$("c-depths").children].forEach((b, i) => { b.setAttribute("aria-checked", i === cDepth); b.tabIndex = i === cDepth ? 0 : -1; });
+  $("c-stage-name").textContent = st.name;
+  const lineEl = $("c-line"), text = st.q[cDepth][cAlt];
+  if (lineEl.textContent !== text) {
+    setCoachTurned(false);
+    const list = $("c-next"); list.innerHTML = "";
+    st.sit.forEach((n, i) => {
+      const row = document.createElement("span"); row.className = "next-item";
+      const num = document.createElement("b"); num.textContent = i + 1;
+      const txt = document.createElement("span"); txt.textContent = n;
+      row.append(num, txt); list.appendChild(row);
+    });
+    const card = $("c-card");
+    if (lineEl.textContent && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      card.classList.remove("flip"); void card.offsetWidth; card.classList.add("flip");
+      setTimeout(() => { lineEl.textContent = text; }, 190);
+    } else lineEl.textContent = text;
+  }
+  if (cShownStage !== cStage) { $("c-answer").value = cAnswers[cStage]; cShownStage = cStage; }
+  if ($("c-situation").value !== cSituation && document.activeElement !== $("c-situation")) $("c-situation").value = cSituation;
+  $("c-next-stage").textContent = cStage < 3 ? `Next: ${C_STAGES[cStage + 1].name}` : "See your plan";
+  $("c-desc-stage").textContent = st.name + ".";
+  $("c-stage-note").textContent = st.note;
+  $("c-desc-depth").textContent = d.name + ".";
+  $("c-depth-note").textContent = d.note;
+  renderPlan();
+  saveCoach();
+}
+function renderPlan() {
+  const plan = $("c-plan"); plan.innerHTML = "";
+  C_STAGES.forEach((st, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "plan-row";
+    const k = document.createElement("span"); k.className = "k"; k.textContent = st.name;
+    const v = document.createElement("span"); v.className = "v" + (cAnswers[i].trim() ? "" : " empty");
+    v.textContent = cAnswers[i].trim() || "Not answered yet";
+    b.append(k, v);
+    b.addEventListener("click", () => { cStage = i; cAlt = 0; renderCoach(); $("c-card").scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
+    plan.appendChild(b);
+  });
+}
+$("c-answer").addEventListener("input", e => { cAnswers[cStage] = e.target.value; saveCoach(); renderPlan(); });
+$("c-situation").addEventListener("input", e => { cSituation = e.target.value; saveCoach(); });
+$("c-next-stage").addEventListener("click", () => {
+  const smooth = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  if (cStage < 3) { cStage++; cAlt = 0; renderCoach(); $("c-card").scrollIntoView({ block: "center", behavior: smooth }); }
+  else $("c-plan").scrollIntoView({ block: "center", behavior: smooth });
+});
+$("c-clear").addEventListener("click", () => {
+  const btn = $("c-clear");
+  if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to clear"; return; }
+  btn.dataset.confirm = ""; btn.textContent = "Clear answers";
+  cAnswers = ["", "", "", ""]; cStage = 0; cAlt = 0; cShownStage = -1; renderCoach();
+});
+$("c-talk").addEventListener("click", () => {
+  const parts = [];
+  if (cSituation.trim()) parts.push(`What's on my mind: ${cSituation.trim()}`);
+  C_STAGES.forEach((st, i) => { if (cAnswers[i].trim()) parts.push(`${st.name}: ${cAnswers[i].trim()}`); });
+  const msg = parts.length
+    ? `I've been working through some coaching questions. Here's where I've got to:\n\n${parts.join("\n")}\n\nHelp me take this further.`
+    : "I'd like some coaching. Where should we start?";
+  if (voiceId !== "coach") setVoice("coach");
+  setApp("talk");
+  chatInput.value = msg;
+  chatInput.focus();
+  window.scrollTo({ top: document.body.scrollHeight });
+});
+
+// ---------- Shared helpers for the newer modes ----------
+const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+function buildStops(el, items, onPick) {
+  el.innerHTML = "";
+  el.style.gridTemplateColumns = `repeat(${items.length}, 1fr)`;
+  el.classList.toggle("few", items.length <= 5);
+  items.forEach((it, i) => {
+    const b = document.createElement("button");
+    b.className = "stop"; b.type = "button"; b.setAttribute("role", "radio");
+    b.innerHTML = `<span class="dot"></span><span class="stop-name"></span>`;
+    b.querySelector(".stop-name").textContent = it.name;
+    b.setAttribute("aria-label", `${i + 1}. ${it.name}`);
+    b.addEventListener("click", () => onPick(i));
+    el.appendChild(b);
+  });
+}
+function buildPills(el, items, onPick) {
+  el.innerHTML = "";
+  items.forEach((it, i) => {
+    const b = document.createElement("button");
+    b.className = "tone"; b.type = "button"; b.setAttribute("role", "radio"); b.textContent = it.name;
+    b.addEventListener("click", () => onPick(i));
+    el.appendChild(b);
+  });
+}
+function markChecked(el, idx) {
+  [...el.children].forEach((b, i) => { b.setAttribute("aria-checked", i === idx); b.tabIndex = i === idx ? 0 : -1; });
+}
+function keyNav(el, get, set) {
+  el.addEventListener("keydown", e => {
+    const d = (e.key === "ArrowRight" || e.key === "ArrowDown") ? 1 : (e.key === "ArrowLeft" || e.key === "ArrowUp") ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    set(Math.max(0, Math.min(el.children.length - 1, get() + d)));
+    el.children[get()]?.focus();
+  });
+}
+function flipper(cardId, hintId) {
+  const card = $(cardId);
+  const set = on => {
+    card.classList.toggle("turned", on);
+    card.setAttribute("aria-pressed", on);
+    $(hintId).textContent = on ? "Tap again to see the front" : "Tap the card to turn it over";
+  };
+  card.addEventListener("click", () => set(!card.classList.contains("turned")));
+  return set;
+}
+function showCard(cardId, lineId, text, setTurned) {
+  const lineEl = $(lineId), card = $(cardId);
+  if (lineEl.textContent === text) return;
+  setTurned(false);
+  if (lineEl.textContent && !reduceMotion()) {
+    card.classList.remove("flip"); void card.offsetWidth; card.classList.add("flip");
+    setTimeout(() => { lineEl.textContent = text; }, 190);
+  } else lineEl.textContent = text;
+}
+function fillBack(listId, items) {
+  const list = $(listId); list.innerHTML = "";
+  items.forEach((n, i) => {
+    const row = document.createElement("span"); row.className = "next-item";
+    const num = document.createElement("b"); num.textContent = i + 1;
+    const txt = document.createElement("span"); txt.textContent = n;
+    row.append(num, txt); list.appendChild(row);
+  });
+}
+function errText(code, verb) {
+  return {
+    not_granted: `Claude wasn't allowed for this page, so it can't ${verb}.`,
+    sampling_disabled: "Claude isn't available for this account.",
+    rate_limited: "Too many requests just now. Try again in a minute.",
+    refused: "Claude declined that. Try rewording what you've written.",
+    invalid_json: "The reply came back in the wrong format. Try again.",
+    bad_shape: "The reply was incomplete. Try again.",
+    image_rejected: "One of the images couldn't be read. Try a different file.",
+    images_unavailable: "Images can't be sent from this view. Try again with a description only."
+  }[code] || "Something went wrong. Try again.";
+}
+function setMsg(id, msg, err) { const el = $(id); el.textContent = msg || ""; el.classList.toggle("err", !!err); }
+function talkWith(voiceKey, text) {
+  if (voiceId !== voiceKey) setVoice(voiceKey);
+  setApp("talk");
+  chatInput.value = text;
+  chatInput.focus();
+  window.scrollTo({ top: document.body.scrollHeight });
+}
+function loadJSON(key, fallback) { try { const v = JSON.parse(localStorage.getItem(key) || "null"); return v ?? fallback; } catch (e) { return fallback; } }
+function saveJSON(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+
+// ---------- Muse, Persona and Oracle: two-dial decks ----------
+const DECKS = {
+  muse: {
+    name: "Muse", voice: "muse", intro: "References from other worlds, from close to home to far away.",
+    a: { label: "Distance", hint: "Close to home → far away", items: [
+      { name: "Near", note: "The same industry or a close neighbour." },
+      { name: "Adjacent", note: "Everyday services and products from other sectors." },
+      { name: "Far", note: "Nature, history and culture." } ] },
+    b: { label: "Form", items: [
+      { name: "Object", note: "A thing you can hold or see." },
+      { name: "Ritual", note: "Something people do, often at a set moment." },
+      { name: "System", note: "How a whole arrangement works." } ] },
+    backBy: "a", backTitle: "Steal this",
+    backs: [
+      ["Name the principle, not the product.", "Find where the pattern breaks for your users.", "Sketch it in your own product's voice."],
+      ["Ask why people trust this pattern.", "List what you'd change to make it fit this brief.", "Combine it with one idea from Provoke."],
+      ["Write the metaphor in one sentence.", "Find the moment in the brief it maps onto.", "Sketch the most literal version, then pull it back."] ],
+    gen: "Each card names a specific, real reference from the given distance and form, then turns it into an open question for the brief. Under 30 words.",
+    decks: { banking: [
+      ["Building society passbooks stamped every deposit by hand. What would a passbook for your tax money look like?",
+       "Market traders count the float into separate tins before opening. What's the digital version of that morning count?",
+       "Envelope budgeting splits cash into labelled envelopes on payday. Why does the physical split work, and what keeps it working online?"],
+      ["A pill organiser shows the week's doses at a glance. How could a business see its week of commitments that simply?",
+       "Kitchens do mise en place before service: everything prepped and in its place. What would prepping money before the month look like?",
+       "Smart meters show energy use as it happens. What if commitments drained visibly in real time, like a meter?"],
+      ["Squirrels bury more than they need, and forgotten nuts grow into forests. What could forgotten savings grow into?",
+       "Harvest festivals mark the moment a surplus is set aside for winter. When is a business's harvest, and how could you mark it?",
+       "Reservoirs store water from wet months for dry ones, with an overflow for floods. What is this business's overflow?"] ] }
+  },
+  persona: {
+    name: "Persona", voice: "persona", intro: "Hear from the people affected by the work.",
+    a: { label: "Who", hint: "Closest to the work → furthest from it", items: [
+      { name: "Customer", note: "The person using it day to day." },
+      { name: "Client", note: "The organisation paying for the work." },
+      { name: "Front line", note: "Staff who support it and take the calls." },
+      { name: "Sceptic", note: "An expert who doubts it." },
+      { name: "Left out", note: "Someone the design quietly excludes." } ] },
+    b: { label: "Mood", items: [
+      { name: "Curious", note: "Open and asking questions." },
+      { name: "Worried", note: "Anxious about what could go wrong for them." },
+      { name: "Fed up", note: "Tired of being let down by things like this." } ] },
+    backBy: "b", backTitle: "Respond",
+    backs: [
+      ["Answer the question in one sentence.", "Find what it reveals about what they value.", "Sketch the screen that answers it without words."],
+      ["Name the fear underneath the worry.", "Design the moment that removes it.", "Decide what you'd say if the worst happened."],
+      ["Find what earned this reaction.", "Cut one thing they'd have to do.", "Write the reply that would win them back."] ],
+    gen: "Each card is something a specific, realistic person of that type would say about this brief, in the first person and in their own words, in that mood. Under 30 words.",
+    decks: { banking: [
+      ["I like the idea of pots, but how do I know how much to put in each one?",
+       "If the money's in a tax pot, can I still get at it when a supplier pays late?",
+       "Another feature to set up. I just want to know what I can spend without doing maths."],
+      ["If owners move money into pots, what does that tell us about them that we don't know now?",
+       "How do we make sure this doesn't feel like we're holding their money hostage?",
+       "Every competitor has pots. Show me why ours will still get used after the first week."],
+      ["What will customers ask me about pots, and what will I need to see on my screen?",
+       "When a pot comes up short before a tax bill, who gets the angry call? Me.",
+       "We launched savings goals last year and nobody used them. What's different this time?"],
+      ["Could I see my clients' pots and adjust them before a VAT return?",
+       "Owners will treat a pot balance as their tax bill. It won't be. Who corrects that?",
+       "I already do this in a spreadsheet for every client. Why would I trust your estimate?"],
+      ["I run my business in cash and across two apps. Where do I fit in this?",
+       "My income comes in lumps every few months. How would percentage rules work for me?",
+       "Everything assumes I'm good with numbers and online all day. I'm neither."] ] }
+  },
+  oracle: {
+    name: "Oracle", voice: "oracle", intro: "Look ahead at what happens if this ships.",
+    a: { label: "Time", hint: "Launch day → five years on", items: [
+      { name: "Launch day", note: "The first hours and days after it goes live." },
+      { name: "A year on", note: "Once habits have formed, good or bad." },
+      { name: "Five years on", note: "When it has changed the market, or been left behind." } ] },
+    b: { label: "Outcome", items: [
+      { name: "Best case", note: "Everything goes right." },
+      { name: "Side effect", note: "Something nobody planned for, good or bad." },
+      { name: "Worst case", note: "Everything goes wrong." } ] },
+    backBy: "b", backTitle: "Work back",
+    backs: [
+      ["Work backwards: what had to be true?", "Find the one decision that made it happen.", "Protect that decision in the design now."],
+      ["Who benefits, and who pays?", "Trace it back to a specific screen or rule.", "Design a nudge that steers it."],
+      ["List the early warning signs.", "Decide what you'd measure from day one.", "Design the recovery, not just the prevention."] ],
+    gen: "Each card is a short news-style moment from the future, starting with the time (for example 'A year on:'), describing that outcome for this brief, then an open question. Under 30 words.",
+    decks: { banking: [
+      ["Launch day: 10,000 businesses set up a tax pot before lunch. What made it so easy to start?",
+       "Launch day: owners set up pots, then call support asking why their balance dropped. What did they misread?",
+       "Launch day: a payment bounces because the money was sitting in a pot. Who explains, and how?"],
+      ["A year on: owners say January tax bills no longer scare them. What changed in their habits?",
+       "A year on: owners hoard money in pots and stop investing in growth. How did the design encourage that?",
+       "A year on: most pots sit empty after the first month. What stopped people coming back?"],
+      ["Five years on: 'safe to spend' is how small businesses talk about money. What did you name first?",
+       "Five years on: tax authorities ask banks for pot data. What does that do to trust?",
+       "Five years on: a competitor makes pots automatic and yours feel like hard work. What did you miss?"] ] }
+  }
+};
+const deckState = loadJSON("prov-deckstate", {});
+Object.keys(DECKS).forEach(k => { if (!deckState[k]) deckState[k] = { a: 0, b: 0 }; });
+const genDecks = loadJSON("prov-decks", {});
+let deckBuiltFor = null, dealing = false;
+const setDeckTurned = flipper("d-card", "d-flip-hint");
+const getDeck = (mode, sid) => genDecks[mode + "|" + sid] || DECKS[mode].decks[sid] || null;
+
+function renderDeck() {
+  const mode = appMode, cfg = DECKS[mode]; if (!cfg) return;
+  const st = deckState[mode];
+  st.a = Math.min(st.a, cfg.a.items.length - 1); st.b = Math.min(st.b, cfg.b.items.length - 1);
+  if (deckBuiltFor !== mode) {
+    buildStops($("d-track"), cfg.a.items, i => { deckState[appMode].a = i; renderDeck(); });
+    buildPills($("d-pills"), cfg.b.items, i => { deckState[appMode].b = i; renderDeck(); });
+    $("d-line").textContent = "";
+    deckBuiltFor = mode;
+  }
+  const A = cfg.a.items[st.a], B = cfg.b.items[st.b];
+  $("d-intro").textContent = cfg.intro;
+  $("d-brief").textContent = currentSet().brief;
+  $("d-a-label").textContent = cfg.a.label; $("d-a-hint").textContent = cfg.a.hint;
+  $("d-b-label").textContent = cfg.b.label;
+  markChecked($("d-track"), st.a); markChecked($("d-pills"), st.b);
+  $("d-ro-a-label").textContent = cfg.a.label;
+  $("d-ro-a").textContent = A.name;
+  $("d-ro-b").textContent = `${cfg.b.label} · ${B.name}`;
+  const total = cfg.a.items.length * cfg.b.items.length;
+  $("d-n").textContent = String(st.a * cfg.b.items.length + st.b + 1).padStart(2, "0");
+  $("d-total").textContent = "/" + String(total).padStart(2, "0");
+  $("d-back-title").textContent = cfg.backTitle;
+  $("d-desc-a").textContent = A.name + "."; $("d-note-a").textContent = A.note;
+  $("d-desc-b").textContent = B.name + "."; $("d-note-b").textContent = B.note;
+  $("d-talk").textContent = `Talk it through with ${cfg.name}`;
+  const cards = getDeck(mode, setId);
+  $("d-card").hidden = !cards; $("d-flip-hint").hidden = !cards;
+  $("d-empty").hidden = !!cards;
+  $("d-talk").hidden = !cards;
+  $("d-redeal").hidden = !cards;
+  $("d-redeal").disabled = dealing;
+  $("d-deal").disabled = dealing;
+  $("d-deal").textContent = dealing ? "Dealing…" : "Deal the deck";
+  $("d-redeal").textContent = dealing ? "Dealing…" : "Deal a new deck";
+  if (cards) {
+    fillBack("d-next", cfg.backs[cfg.backBy === "a" ? st.a : st.b]);
+    showCard("d-card", "d-line", cards[st.a][st.b], setDeckTurned);
+  } else {
+    $("d-line").textContent = "";
+    $("d-empty-text").textContent = `There's no ${cfg.name} deck for this brief yet. Claude can deal all ${total} cards in one go.`;
+  }
+  saveJSON("prov-deckstate", deckState);
+}
+keyNav($("d-track"), () => deckState[appMode]?.a ?? 0, v => { deckState[appMode].a = v; renderDeck(); });
+keyNav($("d-pills"), () => deckState[appMode]?.b ?? 0, v => { deckState[appMode].b = v; renderDeck(); });
+
+function deckPrompt(cfg, brief) {
+  const list = d => d.items.map((x, i) => `${i + 1}. ${x.name}: ${x.note}`).join("\n");
+  return `You are writing a deck of cards that helps designers broaden their thinking. Mode: ${cfg.name}. ${cfg.intro}
+
+Brief:
+"""${brief}"""
+
+First dial, ${cfg.a.label}:
+${list(cfg.a)}
+
+Second dial, ${cfg.b.label}:
+${list(cfg.b)}
+
+Write one card for every combination: ${cfg.a.items.length} x ${cfg.b.items.length} = ${cfg.a.items.length * cfg.b.items.length} cards.
+${cfg.gen}
+
+Rules:
+- Specific to this brief.
+- Any question must be open (what, how, who, which, where or why), never yes/no.
+- UK English, plain language, no em dashes, no quote marks around the card.
+
+Reply with only JSON in this shape:
+{"cards": [["one card per ${cfg.b.label} option, in order"], ... one row per ${cfg.a.label} option, in order]}`;
+}
+async function dealDeck() {
+  const mode = appMode, cfg = DECKS[mode], sid = setId;
+  if (dealing) return;
+  if (!sample) { setMsg("d-status", "Dealing needs Claude, which isn't available in this view.", true); return; }
+  dealing = true; renderDeck();
+  setMsg("d-status", "Dealing. This usually takes 20 to 60 seconds.");
+  try {
+    const out = await sample.json(deckPrompt(cfg, currentSet().brief), { cache: false });
+    const rows = out && out.cards;
+    const ok = Array.isArray(rows) && rows.length === cfg.a.items.length &&
+      rows.every(r => Array.isArray(r) && r.length === cfg.b.items.length && r.every(x => typeof x === "string" && x.trim()));
+    if (!ok) throw { code: "bad_shape" };
+    genDecks[mode + "|" + sid] = rows.map(r => r.map(x => x.trim()));
+    saveJSON("prov-decks", genDecks);
+    setMsg("d-status", "");
+  } catch (err) {
+    if (err?.code !== "cancelled") setMsg("d-status", errText(err?.code, "deal a deck"), true);
+  } finally {
+    dealing = false;
+    if (appMode === mode) renderDeck();
+  }
+}
+$("d-deal").addEventListener("click", dealDeck);
+$("d-redeal").addEventListener("click", dealDeck);
+$("d-talk").addEventListener("click", () => {
+  const cfg = DECKS[appMode], st = deckState[appMode];
+  const card = getDeck(appMode, setId)?.[st.a]?.[st.b] || "";
+  talkWith(cfg.voice, `I drew this ${cfg.name} card (${cfg.a.items[st.a].name}, ${cfg.b.items[st.b].name}):\n\n${card}\n\nHelp me work with it.`);
+});
+
+// ---------- Edit: sort ideas, then cut ----------
+const E_SCOPES = [
+  { name: "Feature", note: "One screen or one part of the product." },
+  { name: "Journey", note: "The steps someone takes from start to finish." },
+  { name: "Whole service", note: "Everything on your list, taken together." }
+];
+const E_SEV = [
+  { name: "Trim", note: "Gentle. Tidy up and remove the obvious." },
+  { name: "Cut", note: "Firm. Make real choices between good ideas." },
+  { name: "Ruthless", note: "Keep only what you'd bet the project on." }
+];
+const E_Q = [
+  ["What's one thing on this screen nobody would miss?",
+   "If this feature lost half its options, which half goes?",
+   "What would happen if you shipped this with a single button?"],
+  ["Which step could merge into the one before it?",
+   "Which part of the journey exists for you, not for them?",
+   "What's the shortest possible path, even if it breaks a rule?"],
+  ["Which idea on your list is a nice-to-have dressed up as a must?",
+   "If you could only fund two of these ideas, which two?",
+   "Which single idea would you bet the whole project on?"]
+];
+const E_BACK = [
+  ["Mark anything you'd keep only out of habit.", "Merge two ideas that do a similar job.", "Read the list aloud. Cut what sounds like filler."],
+  ["Score each idea out of five for impact.", "Cut everything under three.", "Move one idea to later, not never."],
+  ["Pick one idea. Cover the rest with your hand.", "Write why that one, in a sentence.", "Ask what the others were protecting you from."]
+];
+const E_EXAMPLES = {
+  banking: ["Set aside tax automatically on every payment in", "Show one 'safe to spend' number on the home screen",
+            "A monthly text summary instead of another app screen", "Let the owner's accountant view and adjust pots",
+            "Celebrate when a pot hits its target"]
+};
+let eScope = 0, eSev = 0, eIdeas = [], eSetId = null, eIsExample = false;
+const setEditTurned = flipper("e-card", "e-flip-hint");
+buildStops($("e-track"), E_SCOPES, i => { eScope = i; renderEdit(); });
+buildPills($("e-pills"), E_SEV, i => { eSev = i; renderEdit(); });
+keyNav($("e-track"), () => eScope, v => { eScope = v; renderEdit(); });
+keyNav($("e-pills"), () => eSev, v => { eSev = v; renderEdit(); });
+
+function loadIdeas() {
+  eSetId = setId;
+  const saved = loadJSON("prov-ideas-" + eSetId, null);
+  if (Array.isArray(saved)) { eIdeas = saved; eIsExample = false; }
+  else if (E_EXAMPLES[eSetId]) { eIdeas = E_EXAMPLES[eSetId].map(t => ({ t, s: "" })); eIsExample = true; }
+  else { eIdeas = []; eIsExample = false; }
+}
+function saveIdeas() { eIsExample = false; saveJSON("prov-ideas-" + eSetId, eIdeas); }
+function renderEdit() {
+  if (eSetId !== setId) loadIdeas();
+  markChecked($("e-track"), eScope); markChecked($("e-pills"), eSev);
+  showCard("e-card", "e-line", E_Q[eScope][eSev], setEditTurned);
+  fillBack("e-next", E_BACK[eSev]);
+  $("e-desc-a").textContent = E_SCOPES[eScope].name + "."; $("e-note-a").textContent = E_SCOPES[eScope].note;
+  $("e-desc-b").textContent = E_SEV[eSev].name + "."; $("e-note-b").textContent = E_SEV[eSev].note;
+  $("e-example-note").hidden = !eIsExample;
+  const list = $("e-list"); list.innerHTML = "";
+  if (!eIdeas.length) {
+    const li = document.createElement("li"); li.className = "idea";
+    li.innerHTML = `<span class="t hint">No ideas yet. Add the ones you're weighing up, then sort them.</span>`;
+    list.appendChild(li);
+  }
+  eIdeas.forEach((idea, i) => {
+    const li = document.createElement("li");
+    li.className = "idea" + (idea.s === "cut" ? " cut" : "");
+    const t = document.createElement("span"); t.className = "t"; t.textContent = idea.t;
+    const kmc = document.createElement("span"); kmc.className = "kmc"; kmc.setAttribute("role", "group"); kmc.setAttribute("aria-label", "Sort this idea");
+    [["keep", "Keep"], ["maybe", "Maybe"], ["cut", "Cut"]].forEach(([k, label]) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = k; b.textContent = label;
+      b.setAttribute("aria-pressed", idea.s === k);
+      b.addEventListener("click", () => { idea.s = idea.s === k ? "" : k; saveIdeas(); renderEdit(); });
+      kmc.appendChild(b);
+    });
+    const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×";
+    x.setAttribute("aria-label", "Remove " + idea.t);
+    x.addEventListener("click", () => { eIdeas.splice(i, 1); saveIdeas(); renderEdit(); });
+    li.append(t, kmc, x); list.appendChild(li);
+  });
+  const count = k => eIdeas.filter(x => x.s === k).length;
+  $("e-keep").textContent = count("keep"); $("e-maybe").textContent = count("maybe"); $("e-cut").textContent = count("cut");
+}
+$("e-add").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("e-input").value.trim(); if (!v) return;
+  if (eIsExample) eIdeas = [];
+  eIdeas.push({ t: v, s: "" }); $("e-input").value = "";
+  saveIdeas(); renderEdit(); $("e-input").focus();
+});
+$("e-talk").addEventListener("click", () => {
+  const group = (k, label) => { const xs = eIdeas.filter(x => x.s === k).map(x => "- " + x.t); return xs.length ? `${label}:\n${xs.join("\n")}` : ""; };
+  const parts = [group("keep", "Keeping"), group("maybe", "Maybe"), group("cut", "Cutting"), group("", "Not sorted yet")].filter(Boolean);
+  talkWith("editor", parts.length ? `Here's where I've got to with my ideas.\n\n${parts.join("\n\n")}\n\nHelp me narrow this down.` : "Help me narrow down my ideas. Where should I start?");
+});
+
+// ---------- Judge: critique the work through one lens at a time ----------
+const J_LENSES = [
+  { name: "Brief fit", note: "How well it answers the brief that was set." },
+  { name: "User", note: "How it feels and works for the people using it." },
+  { name: "Craft", note: "Clarity, hierarchy, detail and polish." },
+  { name: "Business", note: "Whether it creates value for the organisation." },
+  { name: "Ethics", note: "Who it might exclude, mislead or harm." }
+];
+const J_SEV = [
+  { name: "Warm", note: "Encouraging. Leads with what's working. Good for early work." },
+  { name: "Straight", note: "Balanced and plain. Good for work in progress." },
+  { name: "Hard", note: "Holds nothing back. For work that's nearly ready to ship." }
+];
+const J_EXAMPLES = {
+  banking: "Example: The home screen shows the main balance with three pots underneath: Tax, Salaries and R&D. Each pot has a progress bar towards a target. Owners create pots by hand and choose a percentage of every payment in to move across automatically."
+};
+let jLens = 0, jSev = 1, jSetId = null, jData = { work: "", results: {} }, jBusy = false, jFiles = [], jMax = 0;
+const setJudgeTurned = flipper("j-card", "j-flip-hint");
+buildStops($("j-track"), J_LENSES, i => { jLens = i; renderJudge(); });
+buildPills($("j-pills"), J_SEV, i => { jSev = i; renderJudge(); });
+keyNav($("j-track"), () => jLens, v => { jLens = v; renderJudge(); });
+keyNav($("j-pills"), () => jSev, v => { jSev = v; renderJudge(); });
+
+function loadJudge() {
+  jSetId = setId;
+  jData = loadJSON("prov-judge-" + jSetId, null) || { work: J_EXAMPLES[jSetId] || "", results: {} };
+  $("j-work").value = jData.work;
+}
+function saveJudge() { saveJSON("prov-judge-" + jSetId, jData); }
+function renderJudge() {
+  if (jSetId !== setId) loadJudge();
+  const L = J_LENSES[jLens], S = J_SEV[jSev], r = jData.results[jLens];
+  markChecked($("j-track"), jLens); markChecked($("j-pills"), jSev);
+  $("j-brief").textContent = currentSet().brief;
+  $("j-ro-lens").textContent = L.name;
+  $("j-ro-sev").textContent = r ? `Judged · ${J_SEV[r.sev]?.name || S.name}` : `Severity · ${S.name}`;
+  $("j-score").textContent = r ? (r.score ? r.score : "?") : "–";
+  $("j-card").hidden = !r; $("j-flip-hint").hidden = !r; $("j-empty").hidden = !!r;
+  if (r) {
+    showCard("j-card", "j-line", r.observation, setJudgeTurned);
+    fillBack("j-next", [r.fix, r.question].filter(Boolean));
+  } else {
+    $("j-line").textContent = "";
+    $("j-empty-text").textContent = jData.work.trim()
+      ? `Not judged on ${L.name.toLowerCase()} yet. Press the button below.`
+      : "Describe your work above, then judge it one lens at a time.";
+  }
+  $("j-run").disabled = jBusy;
+  $("j-run").textContent = jBusy ? "Judging…" : (r ? `Judge again on ${L.name.toLowerCase()}` : `Judge on ${L.name.toLowerCase()}`);
+  $("j-desc-a").textContent = L.name + "."; $("j-note-a").textContent = L.note;
+  $("j-desc-b").textContent = S.name + "."; $("j-note-b").textContent = S.note;
+  const sc = $("j-scorecard"); sc.innerHTML = "";
+  J_LENSES.forEach((lens, i) => {
+    const res = jData.results[i];
+    const b = document.createElement("button"); b.type = "button"; b.className = "plan-row";
+    const k = document.createElement("span"); k.className = "k"; k.textContent = lens.name;
+    const v = document.createElement("span"); v.className = "v score-v" + (res ? "" : " empty");
+    if (res) {
+      const n = document.createElement("span"); n.className = "score-n"; n.textContent = (res.score || "?") + "/5";
+      const o = document.createElement("span"); o.textContent = res.observation;
+      v.append(n, o);
+    } else v.textContent = "Not judged yet";
+    b.append(k, v);
+    b.addEventListener("click", () => { jLens = i; renderJudge(); $("j-card").scrollIntoView({ block: "center", behavior: reduceMotion() ? "auto" : "smooth" }); });
+    sc.appendChild(b);
+  });
+}
+$("j-work").addEventListener("input", e => { jData.work = e.target.value; saveJudge(); if (!jData.results[jLens]) renderJudge(); });
+
+function judgePrompt() {
+  const L = J_LENSES[jLens], S = J_SEV[jSev];
+  return `You are reviewing a designer's work through one lens.
+
+Brief:
+"""${currentSet().brief}"""
+
+The work, as the designer describes it:
+"""${jData.work.trim() || "(No description. Judge from the images.)"}"""
+${jFiles.length ? `\n${jFiles.length} image${jFiles.length > 1 ? "s" : ""} of the work ${jFiles.length > 1 ? "are" : "is"} attached.\n` : ""}
+Lens: ${L.name}. ${L.note}
+Severity: ${S.name}. ${S.note}
+
+Be specific to this work. If there isn't enough to judge on this lens, give a score of 0 and use the observation to say what you'd need to see.
+UK English, plain language, no em dashes.
+
+Reply with only JSON in this shape:
+{"score": 1 to 5 for how well the work does on this lens, "observation": "what you see, under 30 words", "fix": "the single most useful change, under 30 words", "question": "one open question for the designer, under 20 words"}`;
+}
+$("j-run").addEventListener("click", async () => {
+  if (jBusy) return;
+  if (!jData.work.trim() && !jFiles.length) { setMsg("j-status", "Describe the work or add a screen first.", true); $("j-work").focus(); return; }
+  if (!sample) { setMsg("j-status", "Judging needs Claude, which isn't available in this view.", true); return; }
+  const lens = jLens, sev = jSev, sid = jSetId;
+  jBusy = true; renderJudge();
+  setMsg("j-status", "Judging. This usually takes 10 to 40 seconds.");
+  try {
+    const opts = { cache: false };
+    if (jFiles.length) opts.images = jFiles.map(f => f.file);
+    const out = await sample.json(judgePrompt(), opts);
+    const score = Math.max(0, Math.min(5, Math.round(Number(out?.score) || 0)));
+    if (!out || typeof out.observation !== "string" || !out.observation.trim()) throw { code: "bad_shape" };
+    if (sid === jSetId) {
+      jData.results[lens] = { score, sev, observation: out.observation.trim(), fix: String(out.fix || "").trim(), question: String(out.question || "").trim() };
+      saveJudge();
+    }
+    setMsg("j-status", "");
+  } catch (err) {
+    if (err?.code !== "cancelled") setMsg("j-status", errText(err?.code, "judge the work"), true);
+  } finally {
+    jBusy = false; if (appMode === "judge") renderJudge();
+  }
+});
+$("j-clear").addEventListener("click", () => {
+  const btn = $("j-clear");
+  if (btn.dataset.confirm !== "1") { btn.dataset.confirm = "1"; btn.textContent = "Tap again to clear"; return; }
+  btn.dataset.confirm = ""; btn.textContent = "Clear";
+  jData.results = {}; saveJudge(); renderJudge();
+});
+$("j-talk").addEventListener("click", () => {
+  const rows = J_LENSES.map((l, i) => jData.results[i] ? `${l.name}: ${jData.results[i].score || "?"}/5. ${jData.results[i].observation} Fix: ${jData.results[i].fix}` : "").filter(Boolean);
+  talkWith("critic", `Here's the work I'm judging:\n${jData.work.trim() || "(see my screens)"}\n\n${rows.length ? "Scorecard so far:\n" + rows.join("\n") + "\n\n" : ""}Help me decide what to change first.`);
+});
+
+// Images for Judge, only where this view can send them
+function renderThumbs() {
+  const box = $("j-thumbs"); box.innerHTML = "";
+  jFiles.forEach((f, i) => {
+    const d = document.createElement("div"); d.className = "thumb";
+    const img = document.createElement("img"); img.src = f.url; img.alt = f.file.name;
+    const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×"; x.setAttribute("aria-label", "Remove " + f.file.name);
+    x.addEventListener("click", () => { URL.revokeObjectURL(f.url); jFiles.splice(i, 1); renderThumbs(); });
+    d.append(img, x); box.appendChild(d);
+  });
+  $("j-img-hint").textContent = jFiles.length ? `${jFiles.length} of ${jMax}. Not saved between visits.` : `Up to ${jMax} images. Not saved between visits.`;
+}
+$("j-files").addEventListener("change", e => {
+  for (const file of e.target.files) { if (jFiles.length < jMax) jFiles.push({ file, url: URL.createObjectURL(file) }); }
+  e.target.value = "";
+  renderThumbs();
+});
+window.claude?.use?.("sample").then(fn => fn?.limits?.()).then(l => {
+  if (!l?.images) return;
+  jMax = l.images.maxCount || 4;
+  $("j-files").accept = (l.images.mediaTypes || []).join(",");
+  $("j-images").hidden = false;
+  renderThumbs();
+}).catch(() => {});
+
+document.querySelectorAll(".brief-select").forEach(sel => sel.addEventListener("change", e => {
+  setId = e.target.value; select.value = setId; closeEdit(); render(); renderMode();
+}));
+function renderMode() {
+  if (appMode === "talk") renderTalk();
+  else if (appMode === "coach") renderCoach();
+  else if (appMode === "edit") renderEdit();
+  else if (appMode === "judge") renderJudge();
+  else if (DECKS[appMode]) renderDeck();
+}
+
+// ---------- App mode menu ----------
+const APP_MODES = [
+  { id: "provoke", name: "Provoke", desc: "Challenge a brief to open up new directions.", live: true },
+  { id: "talk", name: "Talk", desc: "Have an open conversation about your brief, in any of the other voices.", live: true },
+  { id: "coach", name: "Coach", desc: "Work through a problem with coaching questions, from goal to next step.", live: true },
+  { id: "muse", name: "Muse", desc: "Bring in references from other worlds, from near to far.", live: true },
+  { id: "persona", name: "Persona", desc: "Hear from the people affected by the work.", live: true },
+  { id: "edit", name: "Edit", desc: "Sort your ideas and find the one worth pursuing.", live: true },
+  { id: "oracle", name: "Oracle", desc: "Look ahead at what happens if this ships.", live: true },
+  { id: "judge", name: "Judge", desc: "Critique your work against the brief, one lens at a time.", live: true }
+];
+let appMode = "provoke";
+try { const a = localStorage.getItem("prov-app"); if (APP_MODES.some(m => m.id === a && m.live)) appMode = a; } catch (e) {}
+function setApp(id) {
+  appMode = id;
+  try { localStorage.setItem("prov-app", id); } catch (e) {}
+  const m = APP_MODES.find(x => x.id === id);
+  $("app-title").textContent = m.name;
+  const view = DECKS[id] ? "deck" : id;
+  ["provoke", "coach", "talk", "deck", "edit", "judge"].forEach(v => { $("view-" + v).hidden = view !== v; });
+  document.querySelector(".top-actions").hidden = id !== "provoke";
+  [...appMenu.children].forEach((b, i) => {
+    const on = APP_MODES[i].id === id;
+    b.setAttribute("aria-checked", on);
+    if (APP_MODES[i].live) b.querySelector(".tag").textContent = on ? "Current" : "";
+  });
+  renderMode();
+}
+APP_MODES.forEach(m => {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "app-item"; b.setAttribute("role", "menuitemradio");
+  b.setAttribute("aria-checked", m.id === "provoke");
+  if (!m.live) b.setAttribute("aria-disabled", "true");
+  b.innerHTML = `<span class="n"></span><span class="tag"></span><span class="d"></span>`;
+  b.querySelector(".n").textContent = m.name;
+  b.querySelector(".tag").textContent = m.live ? "Current" : "Coming soon";
+  b.querySelector(".d").textContent = m.desc;
+  b.addEventListener("click", () => { if (m.live) { setApp(m.id); toggleMenu(false); appBtn.focus(); } });
+  appMenu.appendChild(b);
+});
+function toggleMenu(open) {
+  appMenu.hidden = !open;
+  appBtn.setAttribute("aria-expanded", open);
+  if (open) appMenu.querySelector('[aria-checked="true"]').focus();
+}
+appBtn.addEventListener("click", e => { e.stopPropagation(); toggleMenu(appMenu.hidden); });
+document.addEventListener("click", e => { if (!appMenu.hidden && !appMenu.contains(e.target)) toggleMenu(false); });
+document.addEventListener("keydown", e => {
+  if (appMenu.hidden) return;
+  const items = [...appMenu.children], i = items.indexOf(document.activeElement);
+  if (e.key === "Escape") { toggleMenu(false); appBtn.focus(); }
+  else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length].focus();
+  }
+});
+
+// ---------- Layout mode and flow ----------
+const STEP_NAMES = ["Brief", "Stance and tone", "Provocation"];
+function applyView() {
+  const flow = mode === "flow";
+  $("mode-all").setAttribute("aria-pressed", !flow);
+  $("mode-flow").setAttribute("aria-pressed", flow);
+  document.querySelectorAll("[data-only]").forEach(el => { el.hidden = el.dataset.only !== mode; });
+  document.querySelectorAll("[data-step]").forEach(el => {
+    el.hidden = flow && !el.dataset.step.split(" ").includes(String(step));
+  });
+  document.querySelectorAll(".steps button").forEach(b => {
+    const n = Number(b.dataset.go);
+    if (n === step) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+    b.classList.toggle("done", n < step);
+  });
+  $("back-btn").style.visibility = step > 1 ? "visible" : "hidden";
+  $("next-btn").textContent = step < 3 ? `Next: ${STEP_NAMES[step]}` : "Start again";
+}
+function goStep(n) {
+  step = n; applyView();
+  window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+$("mode-all").addEventListener("click", () => { mode = "all"; persist(); applyView(); });
+$("mode-flow").addEventListener("click", () => { mode = "flow"; step = 1; persist(); applyView(); });
+document.querySelectorAll(".steps button").forEach(b => b.addEventListener("click", () => goStep(Number(b.dataset.go))));
+$("back-btn").addEventListener("click", () => goStep(Math.max(1, step - 1)));
+$("next-btn").addEventListener("click", () => { closeEdit(); goStep(step < 3 ? step + 1 : 1); });
+
+fillSelect();
+render();
+applyView();
+setApp(appMode);
+window.claude?.use?.("sample").then(fn => { sample = fn; if (!form.hidden) setStatus(sample ? DEFAULT_STATUS : "Generating needs Claude, which isn't available in this view.", !sample); }).catch(() => {});
+</script>
