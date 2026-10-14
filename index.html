@@ -905,6 +905,11 @@ try {
   if (saved) { s = saved.s ?? 0; t = saved.t ?? 0; setId = saved.setId ?? setId; mode = saved.mode === "flow" ? "flow" : "all"; }
 } catch (e) { custom = []; }
 
+// A link ending in #<brief id> (e.g. #health-future) opens that brief
+try {
+  const h = decodeURIComponent((location.hash || "").slice(1));
+  if (h && [...BUILT_IN, ...custom].some(x => x.id === h)) setId = h;
+} catch (e) {}
 const allSets = () => [...BUILT_IN, ...custom];
 const currentSet = () => allSets().find(x => x.id === setId) || BUILT_IN[0];
 function persist() {
