@@ -2,7 +2,7 @@
 
 Worked top to bottom, one item per run. Rob can reorder, add or delete items at any time; the agent follows this file as it stands.
 
-- [ ] **Rename to Ideate.** Title, page `<title>`, README, header wordmark. Keep the repo name.
+- [x] **Rename to Ideate.** Title, page `<title>`, README, header wordmark. Keep the repo name.
 - [ ] **Regroup the menu.** Context, then the five parts in flow order (Challenge, Talk it through, Edit your ideas, Craft, Judge), then Your ideas set apart. Provoke, Muse, Persona and Oracle sit under Challenge. Craft and Your ideas can show "Coming soon" until built.
 - [ ] **Coach becomes a voice.** Fold Coach into Talk it through as the Coach voice (GROW questions). Keep saved coach answers readable.
 - [ ] **Judge lenses.** Rename Ethics to Fairness ("Who the work leaves out"). Add a Thinking lens ("What assumptions the work rests on"). Six lenses in total. Keep old saved results mapped correctly.

@@ -15,7 +15,7 @@ img { max-width: 100%; }
 </style>
 </head>
 <body>
-<title>Ideation Station</title>
+<title>Ideate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
@@ -212,6 +212,9 @@ select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 /* App mode menu */
 .brand { position: relative; display: flex; align-items: center; gap: 10px; }
 .brand h1 { padding-bottom: 0; }
+.masthead { display: grid; gap: 6px; min-width: 0; }
+.wordmark { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.wordmark .wm-name { color: var(--fg); font-weight: 500; }
 .app-mode-btn { all: unset; box-sizing: border-box; cursor: pointer; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--fg); transition: transform .15s ease; }
 .app-mode-btn:hover { border-color: var(--accent); }
 .app-mode-btn:focus-visible, .app-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -359,12 +362,15 @@ label.btn { cursor: pointer; }
 
 <div class="wrap">
   <div class="top">
+    <div class="masthead">
+    <p class="wordmark"><span class="wm-name">Ideate</span> · from the office of Rob</p>
     <div class="brand">
       <h1 id="app-title">Provoke</h1>
       <button class="app-mode-btn" id="app-mode-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="app-menu" aria-label="Change mode">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="app-menu" id="app-menu" role="menu" aria-label="Modes" hidden></div>
+    </div>
     </div>
     <div class="top-actions">
       <div class="mode" role="group" aria-label="Layout">

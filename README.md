@@ -1,6 +1,6 @@
-# Ideation Station
+# Ideate
 
-A design ideation toolkit in a single HTML page. It helps designers broaden their thinking about a brief through eight modes:
+Ideate (previously Ideation Station) is a design ideation toolkit in a single HTML page. It helps designers broaden their thinking about a brief through eight modes:
 
 - **Provoke**: eight provocateur stances across three tones, drawn as Oblique Strategies-style cards.
 - **Talk**: an open conversation about the brief, in any of the other voices.
